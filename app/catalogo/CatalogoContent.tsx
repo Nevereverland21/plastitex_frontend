@@ -6,7 +6,24 @@ import { getProducts, getCategories } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ui/ProductCard';
 import CategoryFilter from '@/components/ui/CategoryFilter';
-import { Search, PackageSearch, SlidersHorizontal } from 'lucide-react';
+import { Search, PackageSearch, SlidersHorizontal, RefreshCw, WifiOff } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+
+function ProductSkeleton() {
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+      <div className="w-full h-56 bg-gradient-to-br from-gray-200 to-gray-100 relative overflow-hidden">
+        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+      </div>
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-gray-200 rounded-full w-3/4" />
+        <div className="h-3 bg-gray-100 rounded-full w-1/2" />
+        <div className="h-9 bg-gray-200 rounded-full w-full mt-2" />
+      </div>
+    </div>
+  );
+}
 
 export default function CatalogoContent() {
   const searchParams = useSearchParams();
@@ -18,6 +35,8 @@ export default function CatalogoContent() {
   const [selected, setSelected] = useState<string | null>(categoryParam);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     getCategories().then(setCategories).catch(console.error);
@@ -25,30 +44,43 @@ export default function CatalogoContent() {
 
   useEffect(() => {
     setLoading(true);
+    setError(false);
+
     getProducts(selected ? { category: selected } : undefined)
       .then((data) => {
         setProducts(data);
         setFiltered(data);
-        setLoading(false);
+        setError(false);
       })
-      .catch(console.error);
-  }, [selected]);
+      .catch(() => {
+        setError(true);
+        setProducts([]);
+        setFiltered([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [selected, retryCount]);
 
-        useEffect(() => {
-        if (!search.trim()) {
-            setFiltered(products);
-            return;
-        }
-        const query = search.toLowerCase();
-        setFiltered(
-            products.filter((p) => {
-            const nameMatch = p.name?.toLowerCase().includes(query) ?? false;
-            const descMatch = p.description?.toLowerCase().includes(query) ?? false;
-            const catMatch = p.category?.name?.toLowerCase().includes(query) ?? false;
-            return nameMatch || descMatch || catMatch;
-            })
-        );
-        }, [search, products]);
+  useEffect(() => {
+    if (!search.trim()) {
+      setFiltered(products);
+      return;
+    }
+    const query = search.toLowerCase();
+    setFiltered(
+      products.filter((p) => {
+        const nameMatch = p.name?.toLowerCase().includes(query) ?? false;
+        const descMatch = p.description?.toLowerCase().includes(query) ?? false;
+        const catMatch = p.category?.name?.toLowerCase().includes(query) ?? false;
+        return nameMatch || descMatch || catMatch;
+      })
+    );
+  }, [search, products]);
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+  };
 
   return (
     <div className="min-h-screen bg-brand-light">
@@ -69,7 +101,9 @@ export default function CatalogoContent() {
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 shrink-0">
               <SlidersHorizontal size={16} />
-              <span>{filtered.length} {filtered.length === 1 ? 'producto' : 'productos'}</span>
+              <span>
+                {loading ? '...' : `${filtered.length} ${filtered.length === 1 ? 'producto' : 'productos'}`}
+              </span>
             </div>
           </div>
 
@@ -86,28 +120,87 @@ export default function CatalogoContent() {
 
         {/* Grid */}
         {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm">
-                <div className="w-full h-56 bg-gray-200 animate-pulse" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                  <div className="h-8 bg-gray-200 rounded-full animate-pulse" />
-                </div>
-              </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductSkeleton key={i} />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4 text-gray-400">
-            <PackageSearch size={56} strokeWidth={1} />
-            <p className="text-lg font-medium text-gray-500">No se encontraron productos</p>
-            <p className="text-sm">Intenta con otro término o categoría</p>
+
+        ) : error ? (
+          /* Estado: error de conexión */
+          <div className="flex flex-col items-center justify-center py-24 gap-5">
+            <div className="w-20 h-20 bg-red-50 border border-red-100 rounded-full flex items-center justify-center">
+              <WifiOff size={36} strokeWidth={1.5} className="text-red-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-700 mb-1">No se pudo cargar el catálogo</p>
+              <p className="text-sm text-gray-400">Verifica tu conexión a internet e intenta de nuevo</p>
+            </div>
+            <button
+              onClick={handleRetry}
+              className="flex items-center gap-2 bg-brand-navy text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-brand-orange transition-all duration-200 hover:scale-105 active:scale-95"
+            >
+              <RefreshCw size={15} />
+              Reintentar
+            </button>
           </div>
+
+        ) : filtered.length === 0 && search ? (
+          /* Estado: sin resultados de búsqueda */
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
+              <PackageSearch size={36} strokeWidth={1.5} className="text-gray-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-semibold text-gray-600 mb-1">
+                Sin resultados para "{search}"
+              </p>
+              <p className="text-sm text-gray-400">Intenta con otro término o explora el catálogo completo</p>
+            </div>
+            <button
+              onClick={() => setSearch('')}
+              className="flex items-center gap-2 border border-gray-200 text-gray-600 px-6 py-2.5 rounded-full text-sm font-medium hover:border-brand-navy hover:text-brand-navy transition-all duration-200"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+
+        ) : filtered.length === 0 ? (
+          /* Estado: catálogo vacío (sin productos en la API) */
+          <div className="flex flex-col items-center justify-center py-24 gap-5">
+            <div className="w-24 h-24 bg-brand-navy/5 border-2 border-dashed border-brand-navy/20 rounded-full flex items-center justify-center">
+              <PackageSearch size={40} strokeWidth={1} className="text-brand-navy/30" />
+            </div>
+            <div className="text-center">
+              <p className="text-xl font-bold text-gray-700 mb-2">
+                Catálogo en construcción
+              </p>
+              <p className="text-sm text-gray-400 max-w-sm">
+                Estamos preparando nuestros productos. Mientras tanto, puedes cotizar directamente por WhatsApp.
+              </p>
+            </div>
+            <a
+              href="https://wa.me/51959388698?text=Hola%2C%20quiero%20cotizar%20productos%20Plastitex"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
+            >
+              Cotizar por WhatsApp
+              <ArrowRight size={14} />
+            </a>
+          </div>
+
         ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} />
+          /* Estado: productos cargados */
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((product, i) => (
+              <div
+                key={product.id}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${i * 50}ms`, animationFillMode: 'both' }}
+              >
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
         )}

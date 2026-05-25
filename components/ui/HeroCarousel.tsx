@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -34,6 +34,8 @@ export default function HeroCarousel({ products }: Props) {
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [hovered, setHovered] = useState(false);
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
+  // Precarga anticipada: índice siguiente que ya precargamos
+  const preloadedRef = useRef<Set<number>>(new Set());
 
   const goTo = useCallback(
     (index: number, dir: 'left' | 'right' = 'right') => {
@@ -56,25 +58,50 @@ export default function HeroCarousel({ products }: Props) {
     goTo(current === products.length - 1 ? 0 : current + 1, 'right');
   }, [current, products.length, goTo]);
 
-  // Autoplay — pausa si hay hover o modal abierto
+  // Autoplay
   useEffect(() => {
     if (products.length <= 1 || hovered || modalProduct) return;
     const timer = setInterval(next, 5000);
     return () => clearInterval(timer);
   }, [next, products.length, hovered, modalProduct]);
 
-  // Precargar todas las imágenes
+  // Precarga TODAS las imágenes al montar
   useEffect(() => {
     products.forEach((p, i) => {
       if (p.image) {
         const img = new window.Image();
         img.src = p.image;
-        img.onload = () => setImageLoaded((prev) => ({ ...prev, [i]: true }));
+        img.onload = () => {
+          setImageLoaded((prev) => ({ ...prev, [i]: true }));
+          preloadedRef.current.add(i);
+        };
+        img.onerror = () => {
+          // Si falla la carga igual marcamos como "listo" para no bloquear
+          setImageLoaded((prev) => ({ ...prev, [i]: true }));
+        };
       } else {
         setImageLoaded((prev) => ({ ...prev, [i]: true }));
+        preloadedRef.current.add(i);
       }
     });
   }, [products]);
+
+  // Precarga anticipada del siguiente al cambiar de slide
+  useEffect(() => {
+    const nextIndex = current === products.length - 1 ? 0 : current + 1;
+    const prevIndex = current === 0 ? products.length - 1 : current - 1;
+
+    [nextIndex, prevIndex].forEach((i) => {
+      if (!preloadedRef.current.has(i) && products[i]?.image) {
+        const img = new window.Image();
+        img.src = products[i].image;
+        img.onload = () => {
+          setImageLoaded((prev) => ({ ...prev, [i]: true }));
+          preloadedRef.current.add(i);
+        };
+      }
+    });
+  }, [current, products]);
 
   const phone = '51959388698';
   const waMessage = encodeURIComponent('¡Hola! Quiero cotizar productos Plastitex.');
@@ -204,7 +231,7 @@ export default function HeroCarousel({ products }: Props) {
 
               <div className="relative w-full">
 
-                {/* Card imagen */}
+                {/* Card imagen — SIN spinner, crossfade entre imágenes */}
                 <div
                   onClick={() => setModalProduct(product)}
                   onMouseEnter={() => setHovered(true)}
@@ -219,72 +246,55 @@ export default function HeroCarousel({ products }: Props) {
                     </div>
                   </div>
 
-                  {/* Skeleton — visible mientras no carga */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="relative">
-                        <div className="w-16 h-16 rounded-full border-2 border-brand-orange/30 border-t-brand-orange animate-spin" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-brand-orange font-bold text-xs">P</span>
-                        </div>
-                      </div>
-                      <p className="text-white/30 text-xs tracking-widest uppercase">Cargando</p>
-                    </div>
-                    <div
-                      className="absolute inset-0 opacity-5"
-                      style={{
-                        backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
-                        backgroundSize: '24px 24px',
-                      }}
-                    />
+                  {/* Fondo placeholder — se ve solo si ninguna imagen cargó aún */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-brand-navy to-blue-900/50 flex items-center justify-center">
+                    <Package size={48} strokeWidth={1} className="text-white/10" />
                   </div>
 
-                  {/* Imágenes — todas montadas, solo la actual visible */}
-                  {products.map((p, i) => (
-                    <div
-                      key={p.id}
-                      className={`absolute inset-0 transition-all duration-500 ${
-                        i === current && !sliding && imageLoaded[i]
-                          ? 'opacity-100 translate-x-0'
-                          : i === current && sliding && imageLoaded[i]
-                          ? direction === 'right'
-                            ? 'opacity-0 translate-x-8'
-                            : 'opacity-0 -translate-x-8'
-                          : 'opacity-0'
-                      }`}
-                    >
-                      {p.image ? (
-                        <img
-                          src={p.image}
-                          alt={p.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-navy to-blue-900">
-                          <Package size={64} strokeWidth={1} className="text-white/20" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {/* Imágenes — todas montadas, crossfade entre ellas */}
+                  {products.map((p, i) => {
+                    const isActive = i === current;
+                    const isLoaded = imageLoaded[i];
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="absolute inset-0 transition-opacity duration-500"
+                        style={{
+                          opacity: isActive && !sliding && isLoaded ? 1
+                                 : isActive && sliding ? 0
+                                 : 0,
+                        }}
+                      >
+                        {p.image ? (
+                          <img
+                            src={p.image}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-navy to-blue-900">
+                            <Package size={64} strokeWidth={1} className="text-white/20" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Degradado inferior */}
-                  <div
-                    className={`absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent z-10 transition-opacity duration-500 ${
-                      imageLoaded[current] ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  />
+                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent z-10" />
 
                   {/* Badge categoría */}
                   <div className="absolute top-4 left-4 z-20">
                     <span className="bg-brand-orange/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      {product.category_name?? ''}
+                      {product.category_name ?? ''}
                     </span>
                   </div>
                 </div>
 
                 {/* Info producto */}
                 <div
-                  className={`mt-4 transition-all duration-400 ${
+                  className={`mt-4 transition-all duration-300 ${
                     sliding ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
                   }`}
                 >
@@ -357,7 +367,6 @@ export default function HeroCarousel({ products }: Props) {
         </div>
       </section>
 
-      {/* Modal — fuera del section para no tener problemas de z-index */}
       <ProductModal
         product={modalProduct}
         onClose={() => setModalProduct(null)}
