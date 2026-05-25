@@ -15,6 +15,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { Product } from '@/types';
+import { WHATSAPP } from '@/lib/config';
 import ProductModal from '@/components/ui/ProductModal';
 
 interface Props {
@@ -34,8 +35,6 @@ export default function HeroCarousel({ products }: Props) {
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
   const preloadedRef = useRef<Set<number>>(new Set());
 
-  // Navegación — directa, sin estado intermedio "sliding".
-  // El crossfade lo hace puramente la transición CSS al cambiar `current`.
   const goTo = useCallback(
     (index: number) => {
       if (products.length <= 1 || index === current) return;
@@ -95,9 +94,6 @@ export default function HeroCarousel({ products }: Props) {
       }
     });
   }, [current, products]);
-
-  const phone = '51959388698';
-  const waMessage = encodeURIComponent('¡Hola! Quiero cotizar productos Plastitex.');
 
   // ¿Hay ya al menos una imagen lista? Sirve para ocultar el placeholder en cuanto haya algo que mostrar.
   const anyLoaded = Object.values(imageLoaded).some(Boolean);
@@ -196,7 +192,7 @@ export default function HeroCarousel({ products }: Props) {
                   <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-200" />
                 </Link>
                 <a
-                  href={`https://wa.me/${phone}?text=${waMessage}`}
+                  href={WHATSAPP.link('¡Hola! Quiero cotizar productos Plastitex.')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
@@ -205,10 +201,6 @@ export default function HeroCarousel({ products }: Props) {
                   Cotizar por WhatsApp
                 </a>
               </div>
-
-              <p className="text-white/30 text-xs tracking-widest uppercase">
-                Cotiza al · 959 388 698
-              </p>
             </div>
 
             {/* ── DERECHA — Carrusel ── */}
@@ -317,9 +309,9 @@ export default function HeroCarousel({ products }: Props) {
 
                   <button
                     onClick={() => {
-                      const wa = `https://wa.me/${phone}?text=${encodeURIComponent(
+                      const wa = WHATSAPP.link(
                         `¡Hola! Me interesa este producto:\n\n*${product.name}*\nPrecio: S/ ${parseFloat(product.price).toFixed(2)}\n\n¿Tienen disponibilidad?`
-                      )}`;
+                      );
                       window.open(wa, '_blank');
                     }}
                     className="mt-3 w-full flex items-center justify-center gap-2 border border-white/20 hover:border-brand-orange hover:bg-brand-orange/10 text-white text-sm font-medium py-2.5 rounded-xl transition-all duration-200"

@@ -15,6 +15,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { Product } from '@/types';
+import { WHATSAPP } from '@/lib/config';
 import { useCartStore } from '@/store/cartStore';
 
 interface Props {
@@ -57,7 +58,6 @@ export default function ProductModal({ product, onClose }: Props) {
   const availableStock = (product?.stock ?? 0) - inCart;
   const isDisabled = !product || product.stock === 0 || availableStock <= 0;
 
-  // Animación de entrada
   useEffect(() => {
     if (product) {
       requestAnimationFrame(() => setVisible(true));
@@ -69,7 +69,6 @@ export default function ProductModal({ product, onClose }: Props) {
     return () => { document.body.style.overflow = ''; };
   }, [product]);
 
-  // Cerrar con Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
@@ -92,8 +91,7 @@ export default function ProductModal({ product, onClose }: Props) {
 
   const handleWhatsApp = () => {
     if (!product) return;
-    const phone = '51959388698';
-    const message = encodeURIComponent(
+    const url = WHATSAPP.link(
       `¡Hola Plastitex! 👋\n\n` +
       `Estoy interesado en cotizar el siguiente producto:\n\n` +
       `📦 *${product.name}*\n` +
@@ -101,14 +99,13 @@ export default function ProductModal({ product, onClose }: Props) {
       `💰 Precio referencial: S/ ${parseFloat(product.price).toFixed(2)}\n\n` +
       `¿Me pueden brindar más información y disponibilidad?`
     );
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    window.open(url, '_blank');
   };
 
   if (!product) return null;
-  console.log(product);
+
   return (
     <>
-      {/* Overlay con animación */}
       <div
         onClick={handleClose}
         className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity duration-250 ${
@@ -116,7 +113,6 @@ export default function ProductModal({ product, onClose }: Props) {
         }`}
       />
 
-      {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div
           className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto pointer-events-auto transition-all duration-250 ${
@@ -125,7 +121,6 @@ export default function ProductModal({ product, onClose }: Props) {
               : 'opacity-0 scale-95 translate-y-4'
           }`}
         >
-          {/* Botón cerrar */}
           <button
             onClick={handleClose}
             className="absolute top-4 right-4 z-20 w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-200 hover:rotate-90"
@@ -135,7 +130,6 @@ export default function ProductModal({ product, onClose }: Props) {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 min-h-[480px]">
 
-            {/* ── Imagen ── */}
             <div className="relative bg-gray-50 rounded-t-3xl sm:rounded-l-3xl sm:rounded-tr-none overflow-hidden min-h-[280px] sm:min-h-[480px] flex items-center justify-center">
               {product.image ? (
                 <img
@@ -150,17 +144,14 @@ export default function ProductModal({ product, onClose }: Props) {
                 </div>
               )}
 
-              {/* Degradado inferior */}
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
 
-              {/* Badge destacado */}
               {product.featured && (
                 <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                   ⭐ Destacado
                 </span>
               )}
 
-              {/* Categoría badge abajo */}
               <div className="absolute bottom-4 left-4">
                 <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-brand-navy text-xs font-semibold px-3 py-1.5 rounded-full">
                   <Tag size={11} />
@@ -169,10 +160,8 @@ export default function ProductModal({ product, onClose }: Props) {
               </div>
             </div>
 
-            {/* ── Info ── */}
             <div className="p-7 sm:p-8 flex flex-col gap-5">
 
-              {/* Nombre */}
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy leading-tight mb-2">
                   {product.name}
@@ -180,14 +169,12 @@ export default function ProductModal({ product, onClose }: Props) {
                 <StockStatus stock={product.stock} />
               </div>
 
-              {/* Descripción */}
               {product.description && (
                 <p className="text-gray-500 text-sm leading-relaxed border-l-2 border-brand-orange/30 pl-3">
                   {product.description}
                 </p>
               )}
 
-              {/* Precio */}
               <div className="bg-brand-light rounded-2xl px-5 py-4">
                 <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">
                   Precio referencial
@@ -205,7 +192,6 @@ export default function ProductModal({ product, onClose }: Props) {
                 )}
               </div>
 
-              {/* Perks */}
               <div className="flex flex-col gap-2">
                 {perks.map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-2.5 text-xs text-gray-500">
@@ -217,7 +203,6 @@ export default function ProductModal({ product, onClose }: Props) {
                 ))}
               </div>
 
-              {/* Botones */}
               <div className="flex flex-col gap-2.5 mt-auto">
                 <button
                   onClick={handleWhatsApp}

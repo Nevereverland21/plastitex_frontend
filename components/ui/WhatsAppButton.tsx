@@ -1,13 +1,10 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
+import { WHATSAPP } from '@/lib/config';
 
 export default function WhatsAppButton() {
-  const phone = '51999999999'; // ← reemplazar con el número real de Plastitex
-  const message = encodeURIComponent(
-    '¡Hola! Estoy interesado en sus productos. ¿Me pueden ayudar?'
-  );
-  const url = `https://wa.me/${phone}?text=${message}`;
+  const url = WHATSAPP.link('¡Hola! Estoy interesado en sus productos. ¿Me pueden ayudar?');
 
   return (
     <a

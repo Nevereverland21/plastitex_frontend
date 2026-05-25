@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { createOrder } from '@/lib/api';
+import { WHATSAPP } from '@/lib/config';
+
 import {
   ShoppingBag,
   User,
@@ -30,7 +32,6 @@ interface FormErrors {
   address?: string;
 }
 
-const PHONE = '51959388698';
 
 export default function Checkout() {
   const router = useRouter();
@@ -103,7 +104,7 @@ export default function Checkout() {
         )
         .join('\n');
 
-      const waMessage = encodeURIComponent(
+      const url = WHATSAPP.link(
         `¡Hola Plastitex! 👋 Acabo de confirmar un pedido en su tienda.\n\n` +
         `📋 *Pedido #${order.id}*\n\n` +
         `👤 *Cliente:* ${form.customer_name}\n` +
@@ -114,8 +115,7 @@ export default function Checkout() {
         `💰 *Total: S/ ${total.toFixed(2)}*\n\n` +
         `¿Pueden confirmar mi pedido y coordinar el pago? ¡Gracias!`
       );
-
-      const url = `https://wa.me/${PHONE}?text=${waMessage}`;
+ 
       setWaUrl(url);
 
       clearCart();
