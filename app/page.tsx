@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react';
 import { getProducts } from '@/lib/api';
 import { Product } from '@/types';
 import HeroCarousel from '@/components/ui/HeroCarousel';
-import FeaturedProducts from '@/components/ui/FeaturedProducts';
 import WhyUs from '@/components/ui/WhyUs';
 
 export default function Home() {
   const [featured, setFeatured] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [, setLoading] = useState(true);
+  const [, setError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
