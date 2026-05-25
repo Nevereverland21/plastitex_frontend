@@ -22,12 +22,17 @@ const config: Config = {
           '0%':   { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-in': {
+          '0%':   { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         shimmer: {
           '100%': { transform: 'translateX(100%)' },
         },
       },
       animation: {
         'fade-in-up': 'fade-in-up 0.4s ease-out',
+        'fade-in':    'fade-in 0.4s ease-out both',
         shimmer:      'shimmer 1.5s infinite',
       },
     },

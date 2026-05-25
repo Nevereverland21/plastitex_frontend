@@ -29,33 +29,27 @@ const features = [
 
 export default function HeroCarousel({ products }: Props) {
   const [current, setCurrent] = useState(0);
-  const [sliding, setSliding] = useState(false);
-  const [, setDirection] = useState<'left' | 'right'>('right');
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [hovered, setHovered] = useState(false);
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
-  // Precarga anticipada: índice siguiente que ya precargamos
   const preloadedRef = useRef<Set<number>>(new Set());
 
+  // Navegación — directa, sin estado intermedio "sliding".
+  // El crossfade lo hace puramente la transición CSS al cambiar `current`.
   const goTo = useCallback(
-    (index: number, dir: 'left' | 'right' = 'right') => {
-      if (sliding || products.length <= 1) return;
-      setDirection(dir);
-      setSliding(true);
-      setTimeout(() => {
-        setCurrent(index);
-        setSliding(false);
-      }, 400);
+    (index: number) => {
+      if (products.length <= 1 || index === current) return;
+      setCurrent(index);
     },
-    [sliding, products.length]
+    [current, products.length]
   );
 
   const prev = useCallback(() => {
-    goTo(current === 0 ? products.length - 1 : current - 1, 'left');
+    goTo(current === 0 ? products.length - 1 : current - 1);
   }, [current, products.length, goTo]);
 
   const next = useCallback(() => {
-    goTo(current === products.length - 1 ? 0 : current + 1, 'right');
+    goTo(current === products.length - 1 ? 0 : current + 1);
   }, [current, products.length, goTo]);
 
   // Autoplay
@@ -76,7 +70,6 @@ export default function HeroCarousel({ products }: Props) {
           preloadedRef.current.add(i);
         };
         img.onerror = () => {
-          // Si falla la carga igual marcamos como "listo" para no bloquear
           setImageLoaded((prev) => ({ ...prev, [i]: true }));
         };
       } else {
@@ -86,7 +79,7 @@ export default function HeroCarousel({ products }: Props) {
     });
   }, [products]);
 
-  // Precarga anticipada del siguiente al cambiar de slide
+  // Precarga anticipada del vecino al cambiar (red de seguridad si productos cambia)
   useEffect(() => {
     const nextIndex = current === products.length - 1 ? 0 : current + 1;
     const prevIndex = current === 0 ? products.length - 1 : current - 1;
@@ -105,6 +98,9 @@ export default function HeroCarousel({ products }: Props) {
 
   const phone = '51959388698';
   const waMessage = encodeURIComponent('¡Hola! Quiero cotizar productos Plastitex.');
+
+  // ¿Hay ya al menos una imagen lista? Sirve para ocultar el placeholder en cuanto haya algo que mostrar.
+  const anyLoaded = Object.values(imageLoaded).some(Boolean);
 
   if (products.length === 0) {
     return (
@@ -186,7 +182,7 @@ export default function HeroCarousel({ products }: Props) {
                     <div className="w-7 h-7 rounded-full bg-brand-orange/15 border border-brand-orange/30 flex items-center justify-center flex-shrink-0">
                       <Icon size={13} className="text-brand-orange" />
                     </div>
-                    <span className="text-white/70 text-sm font-medium">{label}</span>
+                    <span className="text-white/80 text-sm">{label}</span>
                   </div>
                 ))}
               </div>
@@ -231,7 +227,7 @@ export default function HeroCarousel({ products }: Props) {
 
               <div className="relative w-full">
 
-                {/* Card imagen — SIN spinner, crossfade entre imágenes */}
+                {/* Card imagen — crossfade real entre imágenes, sin flash al placeholder */}
                 <div
                   onClick={() => setModalProduct(product)}
                   onMouseEnter={() => setHovered(true)}
@@ -246,12 +242,19 @@ export default function HeroCarousel({ products }: Props) {
                     </div>
                   </div>
 
-                  {/* Fondo placeholder — se ve solo si ninguna imagen cargó aún */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-navy to-blue-900/50 flex items-center justify-center">
+                  {/* Placeholder — SOLO se ve mientras NINGUNA imagen está cargada.
+                      En cuanto carga la primera, se oculta para siempre y deja de aparecer
+                      en los cambios de slide. */}
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br from-brand-navy to-blue-900/50 flex items-center justify-center transition-opacity duration-300 ${
+                      anyLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                    }`}
+                  >
                     <Package size={48} strokeWidth={1} className="text-white/10" />
                   </div>
 
-                  {/* Imágenes — todas montadas, crossfade entre ellas */}
+                  {/* Imágenes — todas montadas, solo la activa visible.
+                      El crossfade lo hace la transición CSS de opacity al cambiar `current`. */}
                   {products.map((p, i) => {
                     const isActive = i === current;
                     const isLoaded = imageLoaded[i];
@@ -259,11 +262,11 @@ export default function HeroCarousel({ products }: Props) {
                     return (
                       <div
                         key={p.id}
-                        className="absolute inset-0 transition-opacity duration-500"
+                        className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                         style={{
-                          opacity: isActive && !sliding && isLoaded ? 1
-                                 : isActive && sliding ? 0
-                                 : 0,
+                          opacity: isActive && isLoaded ? 1 : 0,
+                          // z-index sutil para asegurar que la activa quede sobre las demás
+                          zIndex: isActive ? 2 : 1,
                         }}
                       >
                         {p.image ? (
@@ -271,6 +274,7 @@ export default function HeroCarousel({ products }: Props) {
                             src={p.image}
                             alt={p.name}
                             className="w-full h-full object-cover"
+                            draggable={false}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-navy to-blue-900">
@@ -292,12 +296,8 @@ export default function HeroCarousel({ products }: Props) {
                   </div>
                 </div>
 
-                {/* Info producto */}
-                <div
-                  className={`mt-4 transition-all duration-300 ${
-                    sliding ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0'
-                  }`}
-                >
+                {/* Info producto — fade suave al cambiar de slide usando `key` */}
+                <div key={product.id} className="mt-4 animate-fade-in">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
                       <h3 className="text-white font-bold text-lg leading-tight truncate">
@@ -335,7 +335,7 @@ export default function HeroCarousel({ products }: Props) {
                       {products.map((_, i) => (
                         <button
                           key={i}
-                          onClick={() => goTo(i, i > current ? 'right' : 'left')}
+                          onClick={() => goTo(i)}
                           className={`transition-all duration-300 rounded-full ${
                             i === current
                               ? 'w-6 h-2 bg-brand-orange'
