@@ -8,6 +8,7 @@ import ProductCard from '@/components/ui/ProductCard';
 import CategoryFilter from '@/components/ui/CategoryFilter';
 import { Search, PackageSearch, SlidersHorizontal, RefreshCw, WifiOff } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
+import { WHATSAPP } from '@/lib/config';
 
 function ProductSkeleton() {
   return (
@@ -179,7 +180,7 @@ export default function CatalogoContent() {
               </p>
             </div>
             <a
-              href="https://wa.me/51959388698?text=Hola%2C%20quiero%20cotizar%20productos%20Plastitex"
+              href={WHATSAPP.link('¡Hola! Quiero cotizar productos Plastitex.')}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full text-sm font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
