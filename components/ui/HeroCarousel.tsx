@@ -30,7 +30,7 @@ const features = [
 export default function HeroCarousel({ products }: Props) {
   const [current, setCurrent] = useState(0);
   const [sliding, setSliding] = useState(false);
-  const [direction, setDirection] = useState<'left' | 'right'>('right');
+  const [, setDirection] = useState<'left' | 'right'>('right');
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
   const [hovered, setHovered] = useState(false);
   const [modalProduct, setModalProduct] = useState<Product | null>(null);

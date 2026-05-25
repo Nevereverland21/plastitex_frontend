@@ -7,7 +7,6 @@ import { Product, Category } from '@/types';
 import ProductCard from '@/components/ui/ProductCard';
 import CategoryFilter from '@/components/ui/CategoryFilter';
 import { Search, PackageSearch, SlidersHorizontal, RefreshCw, WifiOff } from 'lucide-react';
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
 function ProductSkeleton() {
@@ -153,7 +152,7 @@ export default function CatalogoContent() {
             </div>
             <div className="text-center">
               <p className="text-lg font-semibold text-gray-600 mb-1">
-                Sin resultados para "{search}"
+                Sin resultados para &quot;{search}&quot;
               </p>
               <p className="text-sm text-gray-400">Intenta con otro término o explora el catálogo completo</p>
             </div>
