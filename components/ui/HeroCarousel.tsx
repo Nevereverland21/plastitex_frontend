@@ -1,7 +1,7 @@
 'use client';
-
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // ← next/image en lugar de <img>
 import {
   ArrowRight,
   MessageCircle,
@@ -28,9 +28,30 @@ const features = [
   { icon: HeadphonesIcon, label: 'Soporte 24/7' },
 ];
 
+const imageCache = new Set<string>();
+
+// Helper: inicializa el mapa de estados consultando el cache primero
+function buildInitialLoaded(products: Product[]): Record<number, boolean> {
+  const result: Record<number, boolean> = {};
+  products.forEach((p, i) => {
+    // Si la imagen ya está en cache (sesión previa) → lista de inmediato
+    if (!p.image || imageCache.has(p.image)) {
+      result[i] = true;
+    } else {
+      result[i] = false;
+    }
+  });
+  return result;
+}
+
 export default function HeroCarousel({ products }: Props) {
   const [current, setCurrent] = useState(0);
-  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
+
+  // Estado inicial inteligente: consulta imageCache antes de mostrar el placeholder
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>(
+    () => buildInitialLoaded(products)
+  );
+
   const [hovered, setHovered] = useState(false);
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
   const preloadedRef = useRef<Set<number>>(new Set());
@@ -58,46 +79,55 @@ export default function HeroCarousel({ products }: Props) {
     return () => clearInterval(timer);
   }, [next, products.length, hovered, modalProduct]);
 
-  // Precarga TODAS las imágenes al montar
+  // Precarga todas las imágenes al montar.
+  // Si ya están en imageCache → marca como lista sin descargar.
   useEffect(() => {
     products.forEach((p, i) => {
-      if (p.image) {
-        const img = new window.Image();
-        img.src = p.image;
-        img.onload = () => {
-          setImageLoaded((prev) => ({ ...prev, [i]: true }));
-          preloadedRef.current.add(i);
-        };
-        img.onerror = () => {
-          setImageLoaded((prev) => ({ ...prev, [i]: true }));
-        };
-      } else {
+      // Ya cargada en sesión previa o sin imagen → nada que hacer
+      if (!p.image || imageCache.has(p.image)) {
         setImageLoaded((prev) => ({ ...prev, [i]: true }));
         preloadedRef.current.add(i);
+        return;
       }
+
+      // Nueva imagen → cargar y guardar en cache de módulo
+      const img = new window.Image();
+      img.src = p.image;
+      img.onload = () => {
+        imageCache.add(p.image!); // ← guarda en cache de módulo
+        setImageLoaded((prev) => ({ ...prev, [i]: true }));
+        preloadedRef.current.add(i);
+      };
+      img.onerror = () => {
+        // Error de carga → marcar como lista para no bloquear el render
+        setImageLoaded((prev) => ({ ...prev, [i]: true }));
+      };
     });
   }, [products]);
 
-  // Precarga anticipada del vecino al cambiar (red de seguridad si productos cambia)
+  // Precarga anticipada del vecino al cambiar de slide
   useEffect(() => {
     const nextIndex = current === products.length - 1 ? 0 : current + 1;
     const prevIndex = current === 0 ? products.length - 1 : current - 1;
 
     [nextIndex, prevIndex].forEach((i) => {
-      if (!preloadedRef.current.has(i) && products[i]?.image) {
-        const img = new window.Image();
-        img.src = products[i].image;
-        img.onload = () => {
-          setImageLoaded((prev) => ({ ...prev, [i]: true }));
-          preloadedRef.current.add(i);
-        };
-      }
+      const p = products[i];
+      if (!p?.image || preloadedRef.current.has(i) || imageCache.has(p.image)) return;
+
+      const img = new window.Image();
+      img.src = p.image;
+      img.onload = () => {
+        imageCache.add(p.image!);
+        setImageLoaded((prev) => ({ ...prev, [i]: true }));
+        preloadedRef.current.add(i);
+      };
     });
   }, [current, products]);
 
-  // ¿Hay ya al menos una imagen lista? Sirve para ocultar el placeholder en cuanto haya algo que mostrar.
+  // ¿Hay al menos una imagen lista? Oculta el placeholder global
   const anyLoaded = Object.values(imageLoaded).some(Boolean);
 
+  // ─── Estado vacío ────────────────────────────────────────────────────────
   if (products.length === 0) {
     return (
       <section className="relative w-full min-h-screen bg-brand-navy flex items-center justify-center overflow-hidden">
@@ -219,7 +249,7 @@ export default function HeroCarousel({ products }: Props) {
 
               <div className="relative w-full">
 
-                {/* Card imagen — crossfade real entre imágenes, sin flash al placeholder */}
+                {/* Card imagen */}
                 <div
                   onClick={() => setModalProduct(product)}
                   onMouseEnter={() => setHovered(true)}
@@ -234,9 +264,8 @@ export default function HeroCarousel({ products }: Props) {
                     </div>
                   </div>
 
-                  {/* Placeholder — SOLO se ve mientras NINGUNA imagen está cargada.
-                      En cuanto carga la primera, se oculta para siempre y deja de aparecer
-                      en los cambios de slide. */}
+                  {/* Placeholder — solo visible mientras NINGUNA imagen ha cargado aún.
+                      Una vez que anyLoaded=true, desaparece para siempre en esta sesión. */}
                   <div
                     className={`absolute inset-0 bg-gradient-to-br from-brand-navy to-blue-900/50 flex items-center justify-center transition-opacity duration-300 ${
                       anyLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
@@ -245,8 +274,9 @@ export default function HeroCarousel({ products }: Props) {
                     <Package size={48} strokeWidth={1} className="text-white/10" />
                   </div>
 
-                  {/* Imágenes — todas montadas, solo la activa visible.
-                      El crossfade lo hace la transición CSS de opacity al cambiar `current`. */}
+                  {/* Imágenes — crossfade con next/image.
+                      - index 0 tiene priority=true → preload en <head>, descarga antes del render.
+                      - El resto son lazy por defecto (correcto, no son visibles al inicio). */}
                   {products.map((p, i) => {
                     const isActive = i === current;
                     const isLoaded = imageLoaded[i];
@@ -257,15 +287,25 @@ export default function HeroCarousel({ products }: Props) {
                         className="absolute inset-0 transition-opacity duration-700 ease-in-out"
                         style={{
                           opacity: isActive && isLoaded ? 1 : 0,
-                          // z-index sutil para asegurar que la activa quede sobre las demás
                           zIndex: isActive ? 2 : 1,
                         }}
                       >
                         {p.image ? (
-                          <img
+                          <Image
                             src={p.image}
                             alt={p.name}
-                            className="w-full h-full object-cover"
+                            fill
+                            // priority solo en la primera imagen (la que se ve al cargar)
+                            // → Next.js inyecta <link rel="preload"> en el <head>
+                            // → el browser descarga la imagen antes de pintar la página
+                            priority={i === 0}
+                            sizes="(max-width: 1024px) 100vw, 50vw"
+                            className="object-cover"
+                            // onLoad también alimenta el cache de módulo
+                            onLoad={() => {
+                              if (p.image) imageCache.add(p.image);
+                              setImageLoaded((prev) => ({ ...prev, [i]: true }));
+                            }}
                             draggable={false}
                           />
                         ) : (
@@ -288,7 +328,7 @@ export default function HeroCarousel({ products }: Props) {
                   </div>
                 </div>
 
-                {/* Info producto — fade suave al cambiar de slide usando `key` */}
+                {/* Info producto */}
                 <div key={product.id} className="mt-4 animate-fade-in">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0">
