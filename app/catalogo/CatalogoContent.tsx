@@ -1,34 +1,6 @@
 'use client';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CAMBIOS vs versión anterior:
-//
-// PROBLEMA ORIGINAL:
-//   getProducts() ahora devuelve PaginatedResponse { count, next, previous, results }
-//   pero el código hacía .map() directo sobre la respuesta → TypeError.
-//   Además toda la búsqueda y filtrado era client-side (filtraba sobre los
-//   productos ya descargados), lo cual dejaba de funcionar con paginación
-//   porque solo se veía la primera página.
-//
-// SOLUCIÓN:
-//   1. Todos los filtros van al BACKEND como query params:
-//      search, category, min_price, max_price, ordering, page, page_size
-//      → la búsqueda y filtrado ocurren en la DB, no en el browser.
-//
-//   2. Paginación real con botones Anterior/Siguiente y contador de páginas.
-//      El estado `page` sube/baja y dispara un nuevo fetch.
-//
-//   3. useDebounce en el search → no llama a la API en cada tecla,
-//      sino 400ms después de que el usuario deja de escribir.
-//
-//   4. Al cambiar cualquier filtro se resetea a page=1 para no quedar
-//      en una página inválida.
-//
-//   5. Los datos vienen de PaginatedResponse.results → .map() funciona.
-// ─────────────────────────────────────────────────────────────────────────────
-
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { getProducts, getCategories, PaginatedResponse } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ui/ProductCard';
@@ -87,7 +59,6 @@ function ProductSkeleton() {
 
 export default function CatalogoContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   // ── Estado de filtros ──────────────────────────────────────────────────────
   const [search, setSearch]       = useState('');
