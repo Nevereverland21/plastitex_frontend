@@ -1,18 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+// components/ui/ProductModal.tsx
+// ─────────────────────────────────────────────────────────────────────────────
+// REDISEÑO completo:
+//
+// 1. BUG PRINCIPAL ARREGLADO: el modal ahora se monta en document.body vía
+//    createPortal. Antes vivía dentro del DOM tree del ProductCard, por eso
+//    quedaba confinado al ancho de la card (~280px) y el sm:grid-cols-2 nunca
+//    aplicaba correctamente.
+//
+// 2. Layout horizontal real en desktop (md:grid-cols-2). En mobile sigue
+//    siendo vertical pero con scroll interno controlado.
+//
+// 3. UN solo indicador de agotado: overlay sobre la imagen + botón disabled +
+//    precio tachado. Eliminé el StockStatus duplicado.
+//
+// 4. Quité el badge "Categoría" duplicado (estaba en top-4 Y bottom-4).
+//
+// 5. Imágenes con next/image (optimizadas).
+//
+// 6. Cleanup correcto del scroll bloqueado: useEffect con cleanup en el
+//    return, no dependiente del flujo de handleClose.
+//
+// 7. handleClose memoizado con useCallback para usarlo correctamente en deps
+//    del listener de Escape.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useEffect, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import Image from 'next/image';
 import {
   X,
   MessageCircle,
   ShoppingCart,
   CheckCircle,
   AlertCircle,
-  XCircle,
   Package,
-  Tag,
   Truck,
   ShieldCheck,
-  RotateCcw,
+  Headset,
+  Star,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { WHATSAPP } from '@/lib/config';
@@ -23,65 +50,70 @@ interface Props {
   onClose: () => void;
 }
 
-function StockStatus({ stock }: { stock: number }) {
-  if (stock === 0)
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-500 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full">
-        <XCircle size={13} /> Agotado
-      </span>
-    );
-  if (stock <= 5)
-    return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full">
-        <AlertCircle size={13} /> Últimas {stock} unidades
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600 bg-green-50 border border-green-200 px-3 py-1.5 rounded-full">
-      <CheckCircle size={13} /> En stock
-    </span>
-  );
-}
-
-const perks = [
-  { icon: Truck, label: 'Envío a todo el Perú' },
+// Diferenciales mostrados en el modal
+const PERKS = [
+  { icon: Truck,       label: 'Envío a todo el Perú' },
   { icon: ShieldCheck, label: 'Calidad garantizada' },
-  { icon: RotateCcw, label: 'Atención personalizada' },
+  { icon: Headset,     label: 'Atención personalizada por WhatsApp' },
 ];
 
+const CLOSE_ANIMATION_MS = 250;
+
 export default function ProductModal({ product, onClose }: Props) {
-  const { addItem, items } = useCartStore();
+  const addItem = useCartStore((s) => s.addItem);
+  const inCart = useCartStore(
+    (s) => s.items.find((i) => i.product.id === product?.id)?.quantity ?? 0,
+  );
+
   const [added, setAdded] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const inCart = items.find((i) => i.product.id === product?.id)?.quantity ?? 0;
-  const availableStock = (product?.stock ?? 0) - inCart;
-  const isDisabled = !product || product.stock === 0 || availableStock <= 0;
-
+  // ─── Portal mount detection (solo client) ──────────────────────────────────
   useEffect(() => {
-    if (product) {
-      requestAnimationFrame(() => setVisible(true));
-      document.body.style.overflow = 'hidden';
-    } else {
-      setVisible(false);
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
+    setMounted(true);
+  }, []);
+
+  // ─── Estados derivados ─────────────────────────────────────────────────────
+  const isOutOfStock = !!product && product.stock === 0;
+  const isLowStock = !!product && product.stock > 0 && product.stock <= 5;
+  const reachedCartLimit = !!product && inCart >= product.stock;
+  const isDisabled = !product || isOutOfStock || reachedCartLimit;
+
+  // ─── Close handler (memoizado para usarlo en deps de effects) ─────────────
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    setTimeout(onClose, CLOSE_ANIMATION_MS);
+  }, [onClose]);
+
+  // ─── Apertura/cierre + bloqueo de scroll ──────────────────────────────────
+  useEffect(() => {
+    if (!product) return;
+
+    // Animación de entrada
+    requestAnimationFrame(() => setVisible(true));
+
+    // Bloquear scroll del body
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // Cleanup: SIEMPRE restaurar el scroll (importante si se desmonta sin handleClose)
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
   }, [product]);
 
+  // ─── Tecla Escape ─────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!product) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [product, handleClose]);
 
-  const handleClose = () => {
-    setVisible(false);
-    setTimeout(onClose, 250);
-  };
-
+  // ─── Acciones ─────────────────────────────────────────────────────────────
   const handleAddToCart = () => {
     if (!product || isDisabled) return;
     addItem(product);
@@ -93,148 +125,227 @@ export default function ProductModal({ product, onClose }: Props) {
     if (!product) return;
     const url = WHATSAPP.link(
       `¡Hola Plastitex! 👋\n\n` +
-      `Estoy interesado en cotizar el siguiente producto:\n\n` +
-      `📦 *${product.name}*\n` +
-      `🏷️ Categoría: ${product.category_name}\n` +
-      `💰 Precio referencial: S/ ${parseFloat(product.price).toFixed(2)}\n\n` +
-      `¿Me pueden brindar más información y disponibilidad?`
+        `Estoy interesado en el siguiente producto:\n\n` +
+        `📦 *${product.name}*\n` +
+        `🏷️ Categoría: ${product.category_name}\n` +
+        `💰 Precio referencial: S/ ${parseFloat(product.price).toFixed(2)}\n\n` +
+        `¿Me pueden brindar más información?`,
     );
     window.open(url, '_blank');
   };
 
-  if (!product) return null;
+  // ─── No renderizar si no hay producto o aún no se montó el portal ─────────
+  if (!product || !mounted) return null;
 
-  return (
+  const price = parseFloat(product.price).toFixed(2);
+
+  // ─── Modal renderizado en document.body vía portal ────────────────────────
+  const modal = (
     <>
+      {/* Backdrop */}
       <div
         onClick={handleClose}
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity duration-250 ${
-          visible ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 bg-black/55 backdrop-blur-sm z-[100]
+                    transition-opacity duration-250
+                    ${visible ? 'opacity-100' : 'opacity-0'}`}
+        aria-hidden="true"
       />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      {/* Contenedor — centra el modal */}
+      <div
+        className="fixed inset-0 z-[101] flex items-center justify-center
+                   p-4 sm:p-6 pointer-events-none"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="product-modal-title"
+      >
         <div
-          className={`relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto pointer-events-auto transition-all duration-250 ${
-            visible
-              ? 'opacity-100 scale-100 translate-y-0'
-              : 'opacity-0 scale-95 translate-y-4'
-          }`}
+          className={`relative bg-white rounded-2xl md:rounded-3xl shadow-2xl
+                      w-full max-w-4xl max-h-[92vh] overflow-y-auto
+                      pointer-events-auto
+                      transition-all duration-250
+                      ${visible
+                        ? 'opacity-100 scale-100 translate-y-0'
+                        : 'opacity-0 scale-95 translate-y-4'}`}
         >
+          {/* Botón cerrar */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 z-20 w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-all duration-200 hover:rotate-90"
+            aria-label="Cerrar"
+            className="absolute top-3 right-3 md:top-4 md:right-4 z-20
+                       w-9 h-9 bg-white/95 hover:bg-gray-100
+                       border border-gray-200 rounded-full
+                       flex items-center justify-center
+                       shadow-sm transition-all duration-200 hover:rotate-90"
           >
-            <X size={17} className="text-gray-600" />
+            <X size={17} className="text-gray-700" strokeWidth={2.5} />
           </button>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 min-h-[480px]">
+          {/* Grid: vertical en mobile, horizontal en desktop (md = 768px) */}
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            {/* ═══════════════ COLUMNA IZQUIERDA: imagen ═══════════════ */}
+            <div className="relative bg-gray-50 aspect-square md:aspect-auto md:min-h-[520px] overflow-hidden">
+              {/* Badges sobre la imagen */}
+              <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 items-start">
+                {/* Categoría (UNO solo, no duplicado como antes) */}
+                {product.category_name && (
+                  <span className="inline-block bg-white/95 backdrop-blur-sm text-brand-navy text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200 shadow-sm">
+                    {product.category_name}
+                  </span>
+                )}
 
-            <div className="relative bg-gray-50 rounded-t-3xl sm:rounded-l-3xl sm:rounded-tr-none overflow-hidden min-h-[280px] sm:min-h-[480px] flex items-center justify-center">
+                {/* Destacado — solo si no está agotado */}
+                {product.featured && !isOutOfStock && (
+                  <span className="inline-flex items-center gap-1 bg-brand-orange text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                    <Star size={11} strokeWidth={2.5} fill="currentColor" />
+                    Destacado
+                  </span>
+                )}
+              </div>
+
+              {/* Imagen */}
               {product.image ? (
-                <img
+                <Image
                   src={product.image}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className={`object-cover ${isOutOfStock ? 'opacity-40 grayscale' : ''}`}
+                  priority
                 />
               ) : (
-                <div className="flex flex-col items-center gap-3 text-gray-300 p-10">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-300">
                   <Package size={72} strokeWidth={1} />
-                  <p className="text-sm">Sin imagen</p>
+                  <p className="text-sm">Sin imagen disponible</p>
                 </div>
               )}
 
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
-
-              {product.featured && (
-                <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-                  ⭐ Destacado
-                </span>
+              {/* Overlay AGOTADO — único indicador visual */}
+              {isOutOfStock && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                  <span className="bg-brand-navy/92 backdrop-blur-sm text-white text-xs font-bold
+                                   px-4 py-2 rounded-full uppercase tracking-wider shadow-md">
+                    Agotado
+                  </span>
+                </div>
               )}
-
-              <div className="absolute bottom-4 left-4">
-                <span className="inline-flex items-center gap-1.5 bg-white/90 backdrop-blur-sm text-brand-navy text-xs font-semibold px-3 py-1.5 rounded-full">
-                  <Tag size={11} />
-                  {product.category_name}
-                </span>
-              </div>
             </div>
 
-            <div className="p-7 sm:p-8 flex flex-col gap-5">
-
+            {/* ═══════════════ COLUMNA DERECHA: info ═══════════════ */}
+            <div className="p-6 md:p-8 flex flex-col gap-5">
+              {/* Título */}
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-brand-navy leading-tight mb-2">
+                <h2
+                  id="product-modal-title"
+                  className="text-2xl md:text-3xl font-bold text-brand-navy leading-tight tracking-tight"
+                >
                   {product.name}
                 </h2>
-                <StockStatus stock={product.stock} />
+
+                {/* Stock contextual: solo en casos de urgencia (≤5) */}
+                {isLowStock && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <AlertCircle size={14} strokeWidth={2.5} className="text-amber-600" />
+                    <span className="text-sm font-semibold text-amber-700">
+                      Quedan solo {product.stock} {product.stock === 1 ? 'unidad' : 'unidades'}
+                    </span>
+                  </div>
+                )}
               </div>
 
+              {/* Descripción */}
               {product.description && (
-                <p className="text-gray-500 text-sm leading-relaxed border-l-2 border-brand-orange/30 pl-3">
+                <p className="text-gray-600 text-sm md:text-base leading-relaxed">
                   {product.description}
                 </p>
               )}
 
-              <div className="bg-brand-light rounded-2xl px-5 py-4">
-                <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">
+              {/* Card de precio */}
+              <div className="bg-brand-light rounded-2xl px-5 py-4 border border-gray-100">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mb-1">
                   Precio referencial
                 </p>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-bold text-brand-navy">S/</span>
-                  <span className="text-4xl font-bold text-brand-orange">
-                    {parseFloat(product.price).toFixed(2)}
+                  <span
+                    className={`text-3xl md:text-4xl font-bold leading-none ${
+                      isOutOfStock ? 'text-gray-400 line-through' : 'text-brand-navy'
+                    }`}
+                  >
+                    S/ {price}
                   </span>
                 </div>
-                {inCart > 0 && (
-                  <p className="text-xs text-gray-400 mt-1.5">
+                {inCart > 0 && !isOutOfStock && (
+                  <p className="text-xs text-green-700 font-semibold mt-2 flex items-center gap-1.5">
+                    <CheckCircle size={12} strokeWidth={2.5} />
                     Ya tienes {inCart} en tu carrito
                   </p>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2">
-                {perks.map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-2.5 text-xs text-gray-500">
-                    <div className="w-6 h-6 bg-brand-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Icon size={12} className="text-brand-orange" />
-                    </div>
+              {/* Perks */}
+              <ul className="flex flex-col gap-2.5">
+                {PERKS.map(({ icon: Icon, label }) => (
+                  <li
+                    key={label}
+                    className="flex items-center gap-2.5 text-sm text-gray-700"
+                  >
+                    <span className="w-7 h-7 bg-brand-orange/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Icon size={13} strokeWidth={2.5} className="text-brand-orange" />
+                    </span>
                     {label}
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
 
-              <div className="flex flex-col gap-2.5 mt-auto">
+              {/* CTAs — siempre al fondo */}
+              <div className="flex flex-col gap-2.5 mt-auto pt-2">
                 <button
                   onClick={handleWhatsApp}
-                  className="w-full flex items-center justify-center gap-2.5 bg-green-500 hover:bg-green-600 text-white py-4 rounded-2xl font-bold text-sm transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-green-500/25"
+                  className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600
+                             text-white py-3.5 rounded-xl font-bold text-sm
+                             transition-all duration-200 hover:scale-[1.02] active:scale-95
+                             shadow-md shadow-green-500/25"
                 >
-                  <MessageCircle size={18} />
+                  <MessageCircle size={18} strokeWidth={2.5} />
                   Cotizar por WhatsApp
                 </button>
 
                 <button
                   onClick={handleAddToCart}
                   disabled={isDisabled}
-                  className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-semibold text-sm transition-all duration-200 ${
-                    added
-                      ? 'bg-green-100 text-green-700 border border-green-200'
-                      : isDisabled
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-brand-navy hover:bg-brand-orange text-white hover:scale-105 active:scale-95'
-                  }`}
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm transition-all duration-200
+                              ${
+                                added
+                                  ? 'bg-green-100 text-green-700 border border-green-200'
+                                  : isDisabled
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : 'bg-brand-navy hover:bg-brand-orange text-white hover:scale-[1.02] active:scale-95'
+                              }`}
                 >
                   {added ? (
-                    <><CheckCircle size={16} /> ¡Agregado al carrito!</>
+                    <>
+                      <CheckCircle size={16} strokeWidth={2.5} />
+                      ¡Agregado al carrito!
+                    </>
+                  ) : isOutOfStock ? (
+                    <span>Producto agotado</span>
+                  ) : reachedCartLimit ? (
+                    <span>Sin más stock disponible</span>
                   ) : (
-                    <><ShoppingCart size={16} /> {isDisabled ? 'Sin stock disponible' : 'Agregar al carrito'}</>
+                    <>
+                      <ShoppingCart size={16} strokeWidth={2.5} />
+                      Agregar al carrito
+                    </>
                   )}
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       </div>
     </>
   );
+
+  // Renderizar en document.body para escapar el DOM tree del padre
+  return createPortal(modal, document.body);
 }

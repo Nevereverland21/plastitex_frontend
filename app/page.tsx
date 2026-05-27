@@ -1,20 +1,35 @@
 // app/page.tsx
-// CAMBIO: el hero ahora pide exactamente 5 productos destacados.
-// El backend devuelve array plano (sin paginar) gracias a ?featured=true&limit=5.
+// ─────────────────────────────────────────────────────────────────────────────
+// Orden de secciones del home:
+//   1. HeroCarousel        — banner principal
+//   2. FeaturedProducts    — productos destacados (desde el backend)
+//   3. ClientLogos         — marcas que confían (reemplaza la franja azul fea)
+//   4. WhyUs               — diferenciales / nuestra promesa
+//
+// Si el cliente decide después mover la sección de empresas a la página
+// corporativa/mayorista, solo es quitar <ClientLogos /> de aquí.
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { getProductsServer } from '@/lib/api';
 import HeroCarousel from '@/components/ui/HeroCarousel';
+import FeaturedProducts from '@/components/ui/FeaturedProducts';
+import ClientLogos from '@/components/ui/ClientLogos';
 import WhyUs from '@/components/ui/WhyUs';
 
 export const revalidate = 60;
 
 export default async function Home() {
-  // Pide solo 5 destacados → el backend limita en DB, no viajan datos extra
-  const featured = await getProductsServer({ featured: true, limit: 5 }).catch(() => []);
+  // Productos destacados — pedimos hasta 8 (el componente recorta a MAX_VISIBLE)
+  const featured = await getProductsServer({
+    featured: true,
+    limit: 8,
+  }).catch(() => []);
 
   return (
     <>
-      <HeroCarousel products={featured} />
+      <HeroCarousel />
+      <FeaturedProducts products={featured} />
+      <ClientLogos />
       <WhyUs />
     </>
   );

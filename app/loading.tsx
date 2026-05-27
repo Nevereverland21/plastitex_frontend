@@ -1,6 +1,7 @@
 // app/loading.tsx
 // Next.js muestra este componente AUTOMÁTICAMENTE mientras carga cualquier página.
-// Reemplaza el flash feo de pantalla vacía o contenido sin estilos.
+// Ahora usa el logo real (en vez del wordmark de texto) para mantener
+// consistencia con el navbar.
 
 export default function Loading() {
   return (
@@ -8,7 +9,7 @@ export default function Loading() {
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: '#1a2540', // brand-navy exacto
+        backgroundColor: '#1B2B5E', // brand-navy exacto (corregido del valor anterior)
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -16,7 +17,7 @@ export default function Loading() {
         zIndex: 9999,
       }}
     >
-      {/* Patrón de fondo igual al hero */}
+      {/* Patrón de fondo */}
       <div
         style={{
           position: 'absolute',
@@ -27,7 +28,7 @@ export default function Loading() {
         }}
       />
 
-      {/* Logo animado */}
+      {/* Contenido animado */}
       <div
         style={{
           position: 'relative',
@@ -39,41 +40,37 @@ export default function Loading() {
           animation: 'fadeIn 0.4s ease-out',
         }}
       >
-        {/* Wordmark */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
-          <span
+        {/* Logo real con fondo blanco redondeado para que destaque sobre el navy */}
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            padding: '20px 32px',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-plastitex.png"
+            alt="Plastitex"
             style={{
-              fontSize: '56px',
-              fontWeight: 800,
-              color: '#ffffff',
-              letterSpacing: '-1px',
-              fontFamily: 'var(--font-inter), sans-serif',
+              height: '52px',
+              width: 'auto',
+              display: 'block',
             }}
-          >
-            Plasti
-          </span>
-          <span
-            style={{
-              fontSize: '56px',
-              fontWeight: 800,
-              color: '#f97316', // brand-orange
-              letterSpacing: '-1px',
-              fontFamily: 'var(--font-inter), sans-serif',
-            }}
-          >
-            tex
-          </span>
+          />
         </div>
 
         {/* Tagline */}
         <p
           style={{
-            color: 'rgba(255,255,255,0.45)',
+            color: 'rgba(255,255,255,0.5)',
             fontSize: '11px',
             fontWeight: 600,
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
             fontFamily: 'var(--font-inter), sans-serif',
+            margin: 0,
           }}
         >
           Transformamos ideas en Merchandising
@@ -93,7 +90,7 @@ export default function Loading() {
           <div
             style={{
               height: '100%',
-              backgroundColor: '#f97316',
+              backgroundColor: '#FF6B2B', // brand-orange exacto
               borderRadius: '99px',
               animation: 'loadBar 1.4s ease-in-out infinite',
             }}

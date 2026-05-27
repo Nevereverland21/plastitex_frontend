@@ -12,6 +12,11 @@
 //    en móvil para evitar zooms/reflows al cargar.
 //
 // 4. Metadata mejorada con Open Graph → mejor SEO y preview en redes sociales.
+//
+// 5. pt responsivo → el navbar nuevo tiene alturas distintas por breakpoint:
+//    - mobile:  navbar 80px + buscador 52px         = 132px
+//    - md:      navbar 80px (buscador inline)       = 80px
+//    - lg+:     top bar 32px + navbar 80px          = 112px
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { Metadata, Viewport } from 'next';
@@ -49,7 +54,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#1a2540', // brand-navy → color de la barra del navegador en móvil
+  themeColor: '#1B2B5E', // brand-navy → color de la barra del navegador en móvil
 };
 
 export default function RootLayout({
@@ -65,7 +70,8 @@ export default function RootLayout({
           <Navbar />
           <CartSidebar />
           <WhatsAppButton />
-          <main className="pt-16">
+          {/* pt responsivo: ver comentario al inicio del archivo */}
+          <main className="pt-[132px] md:pt-20 lg:pt-[112px]">
             {children}
           </main>
           <Footer />

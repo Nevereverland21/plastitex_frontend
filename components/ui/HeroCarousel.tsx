@@ -1,408 +1,710 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+
 import Link from 'next/link';
-import Image from 'next/image'; // ← next/image en lugar de <img>
+import Image from 'next/image';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ArrowRight,
-  MessageCircle,
-  ShieldCheck,
-  Truck,
-  HeadphonesIcon,
   ChevronLeft,
   ChevronRight,
+  Truck,
+  Headset,
+  MessageCircle,
+  Sparkles,
+  ShoppingBag,
+  CreditCard,
   Package,
-  Star,
-  Eye,
+  Mouse,
+  Usb,
+  Coffee,
+  Key,
+  Beer,
 } from 'lucide-react';
-import { Product } from '@/types';
-import { WHATSAPP } from '@/lib/config';
-import ProductModal from '@/components/ui/ProductModal';
 
-interface Props {
-  products: Product[];
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// TIPOS
+// ─────────────────────────────────────────────────────────────────────────────
+type CTA = { label: string; href: string; icon?: 'arrow' | 'whatsapp' };
 
-const features = [
-  { icon: ShieldCheck, label: 'Calidad garantizada' },
-  { icon: Truck, label: 'Envío a todo el Perú' },
-  { icon: HeadphonesIcon, label: 'Soporte 24/7' },
+type HeroSlide = {
+  id: string;
+  variant: 'manifesto' | 'categories' | 'cta' | 'banner';
+  eyebrow?: string;
+  title: string;
+  highlight?: string;
+  subtitle?: string;
+  ctaPrimary?: CTA;
+  ctaSecondary?: CTA;
+  image?: string;
+  imageAlt?: string;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+const WHATSAPP_URL = 'https://wa.me/51999999999';
+
+const SLIDES: HeroSlide[] = [
+  {
+    id: 'manifesto',
+    variant: 'manifesto',
+    eyebrow: 'Tienda online',
+    title: 'Merchandising para',
+    highlight: 'tu día a día',
+    subtitle: 'Tomatodos, mugs, llaveros, USB y más. Compra por unidad, recibe en casa.',
+    ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
+    ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
+  },
+  {
+    id: 'categories',
+    variant: 'categories',
+    eyebrow: 'Nuestro catálogo',
+    title: '6 categorías,',
+    highlight: 'todo lo que buscas',
+    subtitle: 'Encuentra el producto perfecto para regalar o llevar.',
+    ctaPrimary: { label: 'Explorar catálogo', href: '/catalogo', icon: 'arrow' },
+  },
+  {
+    id: 'cta-retail',
+    variant: 'cta',
+    eyebrow: 'Compra desde 1 unidad',
+    title: 'Pedidos pequeños,',
+    highlight: 'atención personal',
+    subtitle: 'Pago seguro, envíos rápidos y soporte por WhatsApp en todo el Perú.',
+    ctaPrimary: { label: 'Comprar ahora', href: '/catalogo', icon: 'arrow' },
+    ctaSecondary: { label: 'WhatsApp', href: WHATSAPP_URL, icon: 'whatsapp' },
+  },
+  // ─── FASE 2: agregar banners reales aquí ──────────────────────────────────
+  // {
+  //   id: 'tomatodos-tornado',
+  //   variant: 'banner',
+  //   image: '/hero/tomatodo-tornado.jpg',
+  //   imageAlt: 'Tomatodos modelo Tornado',
+  //   title: 'Tomatodos Tornado',
+  //   subtitle: 'Diseño moderno, varios colores',
+  //   ctaPrimary: { label: 'Ver producto', href: '/catalogo?categoria=tomatodos', icon: 'arrow' },
+  // },
 ];
 
-const imageCache = new Set<string>();
+const CATEGORIES = [
+  { name: 'Tomatodos', slug: 'tomatodos' },
+  { name: 'Llaveros', slug: 'llaveros' },
+  { name: 'Mugs', slug: 'mugs' },
+  { name: 'Pad Mouse', slug: 'pad-mouse' },
+  { name: 'USB', slug: 'usb' },
+  { name: 'Barmats', slug: 'barmats' },
+];
 
-// Helper: inicializa el mapa de estados consultando el cache primero
-function buildInitialLoaded(products: Product[]): Record<number, boolean> {
-  const result: Record<number, boolean> = {};
-  products.forEach((p, i) => {
-    // Si la imagen ya está en cache (sesión previa) → lista de inmediato
-    if (!p.image || imageCache.has(p.image)) {
-      result[i] = true;
-    } else {
-      result[i] = false;
-    }
-  });
-  return result;
-}
+const AUTOPLAY_MS = 7000;
 
-export default function HeroCarousel({ products }: Props) {
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTE PRINCIPAL
+// ─────────────────────────────────────────────────────────────────────────────
+export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [progress, setProgress] = useState(0);
 
-  // Estado inicial inteligente: consulta imageCache antes de mostrar el placeholder
-  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>(
-    () => buildInitialLoaded(products)
-  );
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const progressStartTime = useRef<number>(Date.now());
+  const rafRef = useRef<number | null>(null);
 
-  const [hovered, setHovered] = useState(false);
-  const [modalProduct, setModalProduct] = useState<Product | null>(null);
-  const preloadedRef = useRef<Set<number>>(new Set());
-
-  const goTo = useCallback(
-    (index: number) => {
-      if (products.length <= 1 || index === current) return;
-      setCurrent(index);
-    },
-    [current, products.length]
-  );
-
-  const prev = useCallback(() => {
-    goTo(current === 0 ? products.length - 1 : current - 1);
-  }, [current, products.length, goTo]);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const next = useCallback(() => {
-    goTo(current === products.length - 1 ? 0 : current + 1);
-  }, [current, products.length, goTo]);
+    setCurrent((c) => (c + 1) % SLIDES.length);
+  }, []);
 
-  // Autoplay
-  useEffect(() => {
-    if (products.length <= 1 || hovered || modalProduct) return;
-    const timer = setInterval(next, 5000);
-    return () => clearInterval(timer);
-  }, [next, products.length, hovered, modalProduct]);
+  const prev = useCallback(() => {
+    setCurrent((c) => (c - 1 + SLIDES.length) % SLIDES.length);
+  }, []);
 
-  // Precarga todas las imágenes al montar.
-  // Si ya están en imageCache → marca como lista sin descargar.
+  const goTo = useCallback((i: number) => setCurrent(i), []);
+
   useEffect(() => {
-    products.forEach((p, i) => {
-      // Ya cargada en sesión previa o sin imagen → nada que hacer
-      if (!p.image || imageCache.has(p.image)) {
-        setImageLoaded((prev) => ({ ...prev, [i]: true }));
-        preloadedRef.current.add(i);
-        return;
+    if (isPaused || reducedMotion) {
+      setProgress(0);
+      return;
+    }
+    progressStartTime.current = Date.now();
+
+    const tick = () => {
+      const elapsed = Date.now() - progressStartTime.current;
+      const pct = Math.min((elapsed / AUTOPLAY_MS) * 100, 100);
+      setProgress(pct);
+      if (elapsed >= AUTOPLAY_MS) {
+        next();
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
       }
+    };
+    rafRef.current = requestAnimationFrame(tick);
 
-      // Nueva imagen → cargar y guardar en cache de módulo
-      const img = new window.Image();
-      img.src = p.image;
-      img.onload = () => {
-        imageCache.add(p.image!); // ← guarda en cache de módulo
-        setImageLoaded((prev) => ({ ...prev, [i]: true }));
-        preloadedRef.current.add(i);
-      };
-      img.onerror = () => {
-        // Error de carga → marcar como lista para no bloquear el render
-        setImageLoaded((prev) => ({ ...prev, [i]: true }));
-      };
-    });
-  }, [products]);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [current, isPaused, reducedMotion, next]);
 
-  // Precarga anticipada del vecino al cambiar de slide
   useEffect(() => {
-    const nextIndex = current === products.length - 1 ? 0 : current + 1;
-    const prevIndex = current === 0 ? products.length - 1 : current - 1;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') prev();
+      else if (e.key === 'ArrowRight') next();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [next, prev]);
 
-    [nextIndex, prevIndex].forEach((i) => {
-      const p = products[i];
-      if (!p?.image || preloadedRef.current.has(i) || imageCache.has(p.image)) return;
-
-      const img = new window.Image();
-      img.src = p.image;
-      img.onload = () => {
-        imageCache.add(p.image!);
-        setImageLoaded((prev) => ({ ...prev, [i]: true }));
-        preloadedRef.current.add(i);
-      };
-    });
-  }, [current, products]);
-
-  // ¿Hay al menos una imagen lista? Oculta el placeholder global
-  const anyLoaded = Object.values(imageLoaded).some(Boolean);
-
-  // ─── Estado vacío ────────────────────────────────────────────────────────
-  if (products.length === 0) {
-    return (
-      <section className="relative w-full min-h-screen bg-brand-navy flex items-center justify-center overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
-            backgroundSize: '48px 48px',
-          }}
-        />
-        <div className="text-center z-10 relative">
-          <div className="flex items-center justify-center gap-1 mb-4">
-            <span className="text-7xl font-bold text-white">Plasti</span>
-            <span className="text-7xl font-bold text-brand-orange">tex</span>
-          </div>
-          <p className="text-white/60 text-xl mb-8">Transformamos ideas en Merchandising</p>
-          <Link
-            href="/catalogo"
-            className="inline-flex items-center gap-2 bg-brand-orange text-white px-8 py-4 rounded-full font-semibold hover:scale-105 transition-all duration-200"
-          >
-            Ver catálogo <ArrowRight size={18} />
-          </Link>
-        </div>
-      </section>
-    );
-  }
-
-  const product = products[current];
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = () => {
+    const delta = touchStartX.current - touchEndX.current;
+    if (Math.abs(delta) > 50) {
+      if (delta > 0) next();
+      else prev();
+    }
+  };
 
   return (
-    <>
-      <section className="relative w-full min-h-[60vh] bg-brand-navy overflow-hidden flex items-center">
+    <section
+      aria-roledescription="carousel"
+      aria-label="Banner principal de Plastitex"
+      className="relative w-full overflow-hidden bg-brand-light"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocus={() => setIsPaused(true)}
+      onBlur={() => setIsPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+    >
+      <div className="relative h-[480px] md:h-[520px]">
+        <BackgroundDecoration />
 
-        {/* Patrón de fondo */}
+        {SLIDES.map((s, i) => (
+          <div
+            key={s.id}
+            className={`absolute inset-0 transition-all duration-700 ease-out ${
+              i === current
+                ? 'opacity-100 translate-x-0 pointer-events-auto'
+                : i < current
+                ? 'opacity-0 -translate-x-8 pointer-events-none'
+                : 'opacity-0 translate-x-8 pointer-events-none'
+            }`}
+            aria-hidden={i !== current}
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${i + 1} de ${SLIDES.length}`}
+          >
+            <SlideContent slide={s} active={i === current} />
+          </div>
+        ))}
+
+        <button
+          onClick={prev}
+          aria-label="Slide anterior"
+          className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-20
+                     w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/90 backdrop-blur
+                     border border-gray-200 shadow-md hover:bg-white hover:shadow-lg
+                     flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        >
+          <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
+        </button>
+        <button
+          onClick={next}
+          aria-label="Slide siguiente"
+          className="absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-20
+                     w-10 h-10 md:w-11 md:h-11 rounded-full bg-brand-navy
+                     shadow-md hover:bg-brand-orange hover:shadow-lg
+                     flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+        >
+          <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
+        </button>
+
         <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
-            backgroundSize: '48px 48px',
-          }}
-        />
-
-        {/* Línea naranja izquierda */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-brand-orange to-transparent" />
-
-        {/* Degradado lateral */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-navy via-brand-navy/95 to-brand-navy/70" />
-
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-
-            {/* ── IZQUIERDA ── */}
-            <div className="flex flex-col gap-7">
-              <div>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-5xl sm:text-6xl font-bold text-white tracking-tight">Plasti</span>
-                  <span className="text-5xl sm:text-6xl font-bold text-brand-orange tracking-tight">tex</span>
-                </div>
-                <p className="text-white/50 text-xs font-semibold uppercase tracking-[0.2em]">
-                  Transformamos ideas en Merchandising
-                </p>
-              </div>
-
-              <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-white leading-snug mb-2">
-                  Somos fabricantes de
-                </h2>
-                <h2 className="text-2xl sm:text-3xl font-bold leading-snug">
-                  <span className="bg-brand-orange text-white px-3 py-1 rounded-lg inline-block">
-                    artículos publicitarios
-                  </span>
-                </h2>
-              </div>
-
-              <div className="flex flex-col gap-2.5">
-                {features.map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-brand-orange/15 border border-brand-orange/30 flex items-center justify-center flex-shrink-0">
-                      <Icon size={13} className="text-brand-orange" />
-                    </div>
-                    <span className="text-white/80 text-sm">{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/catalogo"
-                  className="group flex items-center gap-2 bg-brand-orange hover:bg-orange-500 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-brand-orange/25"
-                >
-                  Ver catálogo completo
-                  <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-200" />
-                </Link>
-                <a
-                  href={WHATSAPP.link('¡Hola! Quiero cotizar productos Plastitex.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
-                >
-                  <MessageCircle size={15} />
-                  Cotizar por WhatsApp
-                </a>
-              </div>
-            </div>
-
-            {/* ── DERECHA — Carrusel ── */}
-            <div className="flex flex-col gap-5">
-
-              {/* Título */}
-              <div className="flex items-center gap-2">
-                <Star size={15} className="text-brand-orange fill-brand-orange" />
-                <p className="text-white/70 text-sm font-semibold uppercase tracking-widest">
-                  Productos destacados
-                </p>
-                <span className="text-white/30 text-xs ml-auto">
-                  {current + 1} / {products.length}
-                </span>
-              </div>
-
-              <div className="relative w-full">
-
-                {/* Card imagen */}
+          className="absolute bottom-5 md:bottom-7 left-1/2 -translate-x-1/2 z-20
+                     flex items-center gap-2"
+          role="tablist"
+          aria-label="Navegación del carrusel"
+        >
+          {SLIDES.map((s, i) => (
+            <button
+              key={s.id}
+              onClick={() => goTo(i)}
+              role="tab"
+              aria-selected={i === current}
+              aria-label={`Ir al slide ${i + 1}`}
+              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden ${
+                i === current ? 'w-10 bg-gray-300' : 'w-2 bg-gray-300 hover:bg-gray-400'
+              }`}
+            >
+              {i === current && (
                 <div
-                  onClick={() => setModalProduct(product)}
-                  onMouseEnter={() => setHovered(true)}
-                  onMouseLeave={() => setHovered(false)}
-                  className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl aspect-[4/3] bg-brand-navy/80 cursor-pointer group/card"
-                >
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/20 transition-all duration-300 z-30 flex items-center justify-center">
-                    <div className="opacity-0 group-hover/card:opacity-100 transition-all duration-300 scale-90 group-hover/card:scale-100 bg-white/90 backdrop-blur-sm text-brand-navy text-xs font-bold px-5 py-2.5 rounded-full flex items-center gap-2 shadow-xl">
-                      <Eye size={14} />
-                      Ver detalle
-                    </div>
-                  </div>
+                  className="h-full bg-brand-orange rounded-full"
+                  style={{
+                    width: `${reducedMotion ? 100 : progress}%`,
+                    transition: 'none',
+                  }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
-                  {/* Placeholder — solo visible mientras NINGUNA imagen ha cargado aún.
-                      Una vez que anyLoaded=true, desaparece para siempre en esta sesión. */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br from-brand-navy to-blue-900/50 flex items-center justify-center transition-opacity duration-300 ${
-                      anyLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                    }`}
-                  >
-                    <Package size={48} strokeWidth={1} className="text-white/10" />
-                  </div>
+      <style jsx>{`
+        @keyframes float-slow {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes float-slow-delayed {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+        }
+        @keyframes float-slow-reverse {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(6px); }
+        }
+        @keyframes stagger-in {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        :global(.anim-float) {
+          animation: float-slow 4s ease-in-out infinite;
+        }
+        :global(.anim-float-delayed) {
+          animation: float-slow-delayed 4.5s ease-in-out infinite;
+          animation-delay: 0.5s;
+        }
+        :global(.anim-float-reverse) {
+          animation: float-slow-reverse 5s ease-in-out infinite;
+          animation-delay: 1s;
+        }
+        :global(.anim-stagger > *) {
+          animation: stagger-in 0.6s ease-out both;
+        }
+        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.1s; }
+        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.2s; }
+        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.3s; }
+        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.4s; }
+        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.5s; }
 
-                  {/* Imágenes — crossfade con next/image.
-                      - index 0 tiene priority=true → preload en <head>, descarga antes del render.
-                      - El resto son lazy por defecto (correcto, no son visibles al inicio). */}
-                  {products.map((p, i) => {
-                    const isActive = i === current;
-                    const isLoaded = imageLoaded[i];
+        @media (prefers-reduced-motion: reduce) {
+          :global(.anim-float),
+          :global(.anim-float-delayed),
+          :global(.anim-float-reverse),
+          :global(.anim-stagger > *) {
+            animation: none;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
 
-                    return (
-                      <div
-                        key={p.id}
-                        className="absolute inset-0 transition-opacity duration-700 ease-in-out"
-                        style={{
-                          opacity: isActive && isLoaded ? 1 : 0,
-                          zIndex: isActive ? 2 : 1,
-                        }}
-                      >
-                        {p.image ? (
-                          <Image
-                            src={p.image}
-                            alt={p.name}
-                            fill
-                            // priority solo en la primera imagen (la que se ve al cargar)
-                            // → Next.js inyecta <link rel="preload"> en el <head>
-                            // → el browser descarga la imagen antes de pintar la página
-                            priority={i === 0}
-                            sizes="(max-width: 1024px) 100vw, 50vw"
-                            className="object-cover"
-                            // onLoad también alimenta el cache de módulo
-                            onLoad={() => {
-                              if (p.image) imageCache.add(p.image);
-                              setImageLoaded((prev) => ({ ...prev, [i]: true }));
-                            }}
-                            draggable={false}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-navy to-blue-900">
-                            <Package size={64} strokeWidth={1} className="text-white/20" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+// ─────────────────────────────────────────────────────────────────────────────
+// FONDO DECORATIVO
+// ─────────────────────────────────────────────────────────────────────────────
+function BackgroundDecoration() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className="absolute -top-32 -right-20 w-[400px] h-[400px] rounded-full opacity-40 anim-float"
+        style={{ background: 'radial-gradient(circle, #2BA9E0 0%, transparent 70%)' }}
+      />
+      <div
+        className="absolute -bottom-32 -left-20 w-[350px] h-[350px] rounded-full opacity-25 anim-float-reverse"
+        style={{ background: 'radial-gradient(circle, #FF6B2B 0%, transparent 70%)' }}
+      />
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #1B2B5E 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
+        }}
+      />
+    </div>
+  );
+}
 
-                  {/* Degradado inferior */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent z-10" />
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDE CONTENT ROUTER
+// ─────────────────────────────────────────────────────────────────────────────
+function SlideContent({ slide, active }: { slide: HeroSlide; active: boolean }) {
+  if (slide.variant === 'manifesto') return <ManifestoSlide slide={slide} active={active} />;
+  if (slide.variant === 'categories') return <CategoriesSlide slide={slide} active={active} />;
+  if (slide.variant === 'cta') return <CTASlide slide={slide} active={active} />;
+  if (slide.variant === 'banner') return <BannerSlide slide={slide} active={active} />;
+  return null;
+}
 
-                  {/* Badge categoría */}
-                  <div className="absolute top-4 left-4 z-20">
-                    <span className="bg-brand-orange/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      {product.category_name ?? ''}
-                    </span>
-                  </div>
-                </div>
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDE 1 — Manifiesto retail
+// ─────────────────────────────────────────────────────────────────────────────
+function ManifestoSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
+  return (
+    <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="h-full grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 items-center">
+        <div className={`relative z-10 ${active ? 'anim-stagger' : ''}`} key={`${slide.id}-${active}`}>
+          {slide.eyebrow && (
+            <p className="text-brand-orange text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3">
+              {slide.eyebrow}
+            </p>
+          )}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-brand-navy leading-[1.05] tracking-tight mb-4">
+            {slide.title}{' '}
+            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
+          </h1>
+          {slide.subtitle && (
+            <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-6 max-w-xl">
+              {slide.subtitle}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <CTAButton cta={slide.ctaPrimary} variant="primary" />
+            <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
+          </div>
+          <TrustBar />
+        </div>
 
-                {/* Info producto */}
-                <div key={product.id} className="mt-4 animate-fade-in">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <h3 className="text-white font-bold text-lg leading-tight truncate">
-                        {product.name}
-                      </h3>
-                      <p className="text-white/50 text-sm mt-0.5 line-clamp-1">
-                        {product.description}
-                      </p>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <p className="text-white/40 text-xs">desde</p>
-                      <p className="text-brand-orange font-bold text-xl">
-                        S/ {parseFloat(product.price).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
+        <div className="hidden md:flex relative h-full items-center justify-center">
+          <IsotypeVisual />
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                  <button
-                    onClick={() => {
-                      const wa = WHATSAPP.link(
-                        `¡Hola! Me interesa este producto:\n\n*${product.name}*\nPrecio: S/ ${parseFloat(product.price).toFixed(2)}\n\n¿Tienen disponibilidad?`
-                      );
-                      window.open(wa, '_blank');
-                    }}
-                    className="mt-3 w-full flex items-center justify-center gap-2 border border-white/20 hover:border-brand-orange hover:bg-brand-orange/10 text-white text-sm font-medium py-2.5 rounded-xl transition-all duration-200"
-                  >
-                    Cotizar este producto <ArrowRight size={14} />
-                  </button>
-                </div>
+function IsotypeVisual() {
+  return (
+    <div className="relative w-[320px] h-[320px]">
+      {/* Círculo blanco con isotipo A COLOR (antes era gradient + isotipo blanco
+          forzado, lo que aplanaba el degradé original del logo y se veía mal). */}
+      <div
+        className="absolute inset-0 rounded-full flex items-center justify-center anim-float bg-white border border-gray-100"
+        style={{
+          boxShadow: '0 25px 60px -15px rgba(27, 43, 94, 0.25)',
+        }}
+      >
+        <Image
+          src="/isotipo-plastitex.png"
+          alt=""
+          width={220}
+          height={240}
+          className="w-[58%] h-auto"
+          priority
+        />
+      </div>
 
-                {/* Controles */}
-                {products.length > 1 && (
-                  <div className="flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-2">
-                      {products.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => goTo(i)}
-                          className={`transition-all duration-300 rounded-full ${
-                            i === current
-                              ? 'w-6 h-2 bg-brand-orange'
-                              : 'w-2 h-2 bg-white/25 hover:bg-white/50'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={prev}
-                        className="w-8 h-8 bg-white/8 hover:bg-white/15 border border-white/15 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-                      >
-                        <ChevronLeft size={16} />
-                      </button>
-                      <button
-                        onClick={next}
-                        className="w-8 h-8 bg-white/8 hover:bg-white/15 border border-white/15 rounded-full flex items-center justify-center text-white transition-all duration-200 hover:scale-110"
-                      >
-                        <ChevronRight size={16} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+      {/* Anillo decorativo sutil alrededor del círculo */}
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background: 'radial-gradient(circle at 30% 30%, rgba(43, 169, 224, 0.18), transparent 60%)',
+        }}
+      />
 
+      <div className="absolute -top-2 -left-4 anim-float-delayed">
+        <FloatingBadge icon={<Truck size={18} className="text-brand-orange" />} label="Envío Perú" />
+      </div>
+      <div className="absolute top-1/2 -right-8 anim-float">
+        <FloatingBadge icon={<ShoppingBag size={18} className="text-brand-sky" />} label="Desde 1 ud." />
+      </div>
+      <div className="absolute bottom-2 -left-2 anim-float-reverse">
+        <FloatingBadge icon={<Headset size={18} className="text-green-600" />} label="Soporte" />
+      </div>
+    </div>
+  );
+}
+
+function FloatingBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div className="bg-white rounded-2xl px-3.5 py-2.5 shadow-xl border border-gray-100 flex items-center gap-2">
+      {icon}
+      <span className="text-sm font-semibold text-brand-navy whitespace-nowrap">{label}</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDE 2 — Categorías
+// ─────────────────────────────────────────────────────────────────────────────
+function CategoriesSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
+  return (
+    <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="h-full grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6 items-center">
+        <div className={`relative z-10 ${active ? 'anim-stagger' : ''}`} key={`${slide.id}-${active}`}>
+          {slide.eyebrow && (
+            <p className="text-brand-orange text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3">
+              {slide.eyebrow}
+            </p>
+          )}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-brand-navy leading-[1.05] tracking-tight mb-4">
+            {slide.title}{' '}
+            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
+          </h1>
+          {slide.subtitle && (
+            <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-6 max-w-md">
+              {slide.subtitle}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <CTAButton cta={slide.ctaPrimary} variant="primary" />
           </div>
         </div>
-      </section>
 
-      <ProductModal
-        product={modalProduct}
-        onClose={() => setModalProduct(null)}
+        <div className={`grid grid-cols-3 gap-3 ${active ? 'anim-stagger' : ''}`} key={`${slide.id}-grid-${active}`}>
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat.slug}
+              href={`/catalogo?categoria=${cat.slug}`}
+              className="group bg-white rounded-2xl p-4 md:p-5 shadow-md hover:shadow-xl border border-gray-100
+                         hover:border-brand-orange/40 transition-all duration-300 hover:-translate-y-1
+                         flex flex-col items-center justify-center gap-2 aspect-square"
+            >
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-brand-light group-hover:bg-brand-orange/10
+                              flex items-center justify-center transition-colors">
+                <CategoryIcon slug={cat.slug} />
+              </div>
+              <span className="text-xs md:text-sm font-semibold text-brand-navy text-center leading-tight">
+                {cat.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryIcon({ slug }: { slug: string }) {
+  const iconClass =
+    'w-6 h-6 md:w-7 md:h-7 text-brand-navy group-hover:text-brand-orange transition-colors';
+  switch (slug) {
+    case 'tomatodos':
+      return <Coffee className={iconClass} strokeWidth={1.8} />;
+    case 'llaveros':
+      return <Key className={iconClass} strokeWidth={1.8} />;
+    case 'mugs':
+      return <Coffee className={iconClass} strokeWidth={1.8} />;
+    case 'pad-mouse':
+      return <Mouse className={iconClass} strokeWidth={1.8} />;
+    case 'usb':
+      return <Usb className={iconClass} strokeWidth={1.8} />;
+    case 'barmats':
+      return <Beer className={iconClass} strokeWidth={1.8} />;
+    default:
+      return <Package className={iconClass} strokeWidth={1.8} />;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDE 3 — CTA retail con cards de íconos (Compra · Recibe · Chat)
+// ─────────────────────────────────────────────────────────────────────────────
+function CTASlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
+  return (
+    <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="h-full grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-6 items-center">
+        <div className={`relative z-10 ${active ? 'anim-stagger' : ''}`} key={`${slide.id}-${active}`}>
+          {slide.eyebrow && (
+            <div className="inline-flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/20 px-3 py-1.5 rounded-full mb-4">
+              <Sparkles size={14} className="text-brand-orange" />
+              <p className="text-brand-orange text-xs font-bold uppercase tracking-wider">
+                {slide.eyebrow}
+              </p>
+            </div>
+          )}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-brand-navy leading-[1.05] tracking-tight mb-4">
+            {slide.title}{' '}
+            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
+          </h1>
+          {slide.subtitle && (
+            <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-6 max-w-xl">
+              {slide.subtitle}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <CTAButton cta={slide.ctaPrimary} variant="primary" />
+            <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
+          </div>
+        </div>
+
+        <div className="hidden md:flex relative h-full items-center justify-center">
+          <RetailComposition />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RetailComposition() {
+  // Estructura reorganizada para que las 3 cards NO se solapen con la central:
+  //   - Card central (blanca con isotipo) más pequeña, ocupa el centro
+  //   - Compra: arriba derecha, fuera del cuadrante central
+  //   - Recibe: abajo izquierda, sale hacia afuera (antes quedaba tapada)
+  //   - Chat: medio derecha, fuera del cuadrante central
+  return (
+    <div className="relative w-[320px] h-[320px]">
+      {/* Card central blanca con isotipo a color — más pequeña que antes para
+          dar aire a las cards laterales */}
+      <div className="absolute inset-[60px] bg-white rounded-3xl shadow-2xl flex items-center justify-center anim-float border border-gray-100">
+        <Image
+          src="/isotipo-plastitex.png"
+          alt=""
+          width={180}
+          height={200}
+          className="w-[55%] h-auto"
+        />
+      </div>
+
+      {/* Card naranja arriba derecha — Compra */}
+      <div
+        className="absolute -top-2 -right-2 w-24 h-24 bg-brand-orange rounded-2xl anim-float-delayed shadow-xl flex flex-col items-center justify-center text-white gap-1"
+        style={{ transform: 'rotate(8deg)' }}
+      >
+        <ShoppingBag size={26} strokeWidth={2} />
+        <span className="text-[11px] font-bold uppercase tracking-wider">Compra</span>
+      </div>
+
+      {/* Card sky abajo izquierda — Recibe (ahora SALE del marco, no se tapa) */}
+      <div className="absolute -bottom-4 -left-4 w-28 h-28 bg-teal-500 rounded-full anim-float-reverse shadow-xl flex flex-col items-center justify-center text-white gap-1">
+        <Package size={28} strokeWidth={2} />
+        <span className="text-[11px] font-bold uppercase tracking-wider">Recibe</span>
+      </div>
+
+      {/* Card navy medio derecha — Chat */}
+      <div
+        className="absolute top-1/2 -right-6 -translate-y-1/2 w-20 h-20 bg-brand-navy rounded-xl anim-float shadow-xl flex flex-col items-center justify-center text-white gap-1"
+        style={{ transform: 'translateY(-50%) rotate(-8deg)' }}
+      >
+        <MessageCircle size={22} strokeWidth={2} />
+        <span className="text-[10px] font-bold uppercase tracking-wider">Chat</span>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLIDE BANNER — Fase 2
+// ─────────────────────────────────────────────────────────────────────────────
+function BannerSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
+  if (!slide.image) return null;
+  return (
+    <div className="relative h-full w-full">
+      <Image
+        src={slide.image}
+        alt={slide.imageAlt ?? slide.title}
+        fill
+        className="object-cover"
+        priority={active}
+        sizes="100vw"
       />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent" />
+
+      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+        <div className={`max-w-xl text-white ${active ? 'anim-stagger' : ''}`} key={`${slide.id}-${active}`}>
+          {slide.eyebrow && (
+            <p className="text-brand-orange text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3">
+              {slide.eyebrow}
+            </p>
+          )}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.05] tracking-tight mb-4">
+            {slide.title}{' '}
+            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
+          </h1>
+          {slide.subtitle && (
+            <p className="text-base md:text-lg text-white/90 leading-relaxed mb-6">
+              {slide.subtitle}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <CTAButton cta={slide.ctaPrimary} variant="primary" />
+            <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CTA BUTTON
+// ─────────────────────────────────────────────────────────────────────────────
+function CTAButton({
+  cta,
+  variant,
+}: {
+  cta?: CTA;
+  variant: 'primary' | 'whatsapp' | 'outline';
+}) {
+  if (!cta) return null;
+
+  const baseStyles =
+    'inline-flex items-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-sm md:text-base font-semibold transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg';
+
+  const variantStyles = {
+    primary: 'bg-brand-orange hover:bg-orange-600 text-white',
+    whatsapp: 'bg-green-500 hover:bg-green-600 text-white',
+    outline: 'bg-white hover:bg-brand-light text-brand-navy border border-gray-200',
+  };
+
+  const isExternal = cta.href.startsWith('http');
+
+  const content = (
+    <>
+      {cta.icon === 'whatsapp' && <MessageCircle size={18} strokeWidth={2.5} />}
+      <span>{cta.label}</span>
+      {cta.icon === 'arrow' && <ArrowRight size={16} strokeWidth={2.5} />}
     </>
+  );
+
+  if (isExternal) {
+    return (
+      <a
+        href={cta.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${baseStyles} ${variantStyles[variant]}`}
+      >
+        {content}
+      </a>
+    );
+  }
+  return (
+    <Link href={cta.href} className={`${baseStyles} ${variantStyles[variant]}`}>
+      {content}
+    </Link>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRUST BAR — Cualidades retail
+// ─────────────────────────────────────────────────────────────────────────────
+function TrustBar() {
+  const items = [
+    { icon: <Truck size={14} strokeWidth={2.5} />, label: 'Envíos a todo el Perú' },
+    { icon: <ShoppingBag size={14} strokeWidth={2.5} />, label: 'Compra desde 1 unidad' },
+    { icon: <CreditCard size={14} strokeWidth={2.5} />, label: 'Pago seguro' },
+  ];
+  return (
+    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-700">
+      {items.map((it) => (
+        <span key={it.label} className="flex items-center gap-1.5">
+          <span className="text-green-600">{it.icon}</span>
+          <span className="font-medium">{it.label}</span>
+        </span>
+      ))}
+    </div>
   );
 }
