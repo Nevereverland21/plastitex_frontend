@@ -4,6 +4,8 @@
 import { useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
+type UrlUpdates = Partial<Record<string, string | number | boolean | undefined>>;
+
 export type OrderingValue =
   | '-created_at'
   | 'created_at'
@@ -104,7 +106,7 @@ export function useCatalogFilters() {
     <K extends keyof CatalogFilters>(key: K, value: CatalogFilters[K]) => {
       // Mapeo de keys camelCase → snake_case para la URL
       const urlKey = mapKeyToUrl(key);
-      const updates: Record<string, unknown> = { [urlKey]: value };
+      const updates: UrlUpdates = { [urlKey]: value };
 
       // Si cambia cualquier filtro que no sea `page`, resetear a página 1
       if (key !== 'page') {
@@ -119,7 +121,8 @@ export function useCatalogFilters() {
   // ─── Setter múltiple ──────────────────────────────────────────────────────
   const setFilters = useCallback(
     (updates: Partial<CatalogFilters>) => {
-      const urlUpdates: Record<string, unknown> = {};
+        
+      const urlUpdates: UrlUpdates = {};
       let touchedNonPage = false;
 
       (Object.keys(updates) as (keyof CatalogFilters)[]).forEach((key) => {
