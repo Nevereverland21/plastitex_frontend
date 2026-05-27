@@ -14,11 +14,6 @@ import {
   ShoppingBag,
   CreditCard,
   Package,
-  Mouse,
-  Usb,
-  Coffee,
-  Key,
-  Beer,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -55,15 +50,21 @@ const SLIDES: HeroSlide[] = [
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
-  {
-    id: 'categories',
-    variant: 'categories',
-    eyebrow: 'Nuestro catálogo',
-    title: '6 categorías,',
-    highlight: 'todo lo que buscas',
-    subtitle: 'Encuentra el producto perfecto para regalar o llevar.',
-    ctaPrimary: { label: 'Explorar catálogo', href: '/catalogo', icon: 'arrow' },
-  },
+  // ─── Slide de categorías DESACTIVADO ──────────────────────────────────────
+  // Razón: ya tenemos <CategoriesStrip /> permanente debajo del hero, mostrar
+  // las mismas 6 categorías dos veces es redundante. Si en algún momento se
+  // quita la tira y se quiere volver a este slide, descomentar este bloque y
+  // las funciones CategoriesSlide + CategoryIcon más abajo.
+  //
+  // {
+  //   id: 'categories',
+  //   variant: 'categories',
+  //   eyebrow: 'Nuestro catálogo',
+  //   title: '6 categorías,',
+  //   highlight: 'todo lo que buscas',
+  //   subtitle: 'Encuentra el producto perfecto para regalar o llevar.',
+  //   ctaPrimary: { label: 'Explorar catálogo', href: '/catalogo', icon: 'arrow' },
+  // },
   {
     id: 'cta-retail',
     variant: 'cta',
@@ -85,7 +86,7 @@ const SLIDES: HeroSlide[] = [
   //   ctaPrimary: { label: 'Ver producto', href: '/catalogo?categoria=tomatodos', icon: 'arrow' },
   // },
 ];
-
+/*
 const CATEGORIES = [
   { name: 'Tomatodos', slug: 'tomatodos' },
   { name: 'Llaveros', slug: 'llaveros' },
@@ -94,6 +95,9 @@ const CATEGORIES = [
   { name: 'USB', slug: 'usb' },
   { name: 'Barmats', slug: 'barmats' },
 ];
+
+*/
+
 
 const AUTOPLAY_MS = 7000;
 
@@ -343,7 +347,7 @@ function BackgroundDecoration() {
 // ─────────────────────────────────────────────────────────────────────────────
 function SlideContent({ slide, active }: { slide: HeroSlide; active: boolean }) {
   if (slide.variant === 'manifesto') return <ManifestoSlide slide={slide} active={active} />;
-  if (slide.variant === 'categories') return <CategoriesSlide slide={slide} active={active} />;
+  // if (slide.variant === 'categories') return <CategoriesSlide slide={slide} active={active} />; // desactivado, ver nota arriba
   if (slide.variant === 'cta') return <CTASlide slide={slide} active={active} />;
   if (slide.variant === 'banner') return <BannerSlide slide={slide} active={active} />;
   return null;
@@ -438,8 +442,17 @@ function FloatingBadge({ icon, label }: { icon: React.ReactNode; label: string }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDE 2 — Categorías
+// SLIDE 2 — Categorías [DESACTIVADO]
 // ─────────────────────────────────────────────────────────────────────────────
+// Estas funciones quedaron sin uso porque el slide 'categories' se quitó del
+// array SLIDES (ahora hay <CategoriesStrip /> permanente debajo del hero).
+// Se dejan comentadas por si en el futuro se quiere reactivar el slide.
+// Para reactivar:
+//   1. Descomentar el slide en el array SLIDES (arriba)
+//   2. Descomentar estas dos funciones
+//   3. Asegurarse de que el case 'categories' siga en SlideContent
+//
+/*
 function CategoriesSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
   return (
     <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -508,6 +521,8 @@ function CategoryIcon({ slug }: { slug: string }) {
       return <Package className={iconClass} strokeWidth={1.8} />;
   }
 }
+*/
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SLIDE 3 — CTA retail con cards de íconos (Compra · Recibe · Chat)
@@ -595,9 +610,7 @@ function RetailComposition() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SLIDE BANNER — Fase 2
-// ─────────────────────────────────────────────────────────────────────────────
+
 function BannerSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
   if (!slide.image) return null;
   return (
@@ -688,9 +701,6 @@ function CTAButton({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TRUST BAR — Cualidades retail
-// ─────────────────────────────────────────────────────────────────────────────
 function TrustBar() {
   const items = [
     { icon: <Truck size={14} strokeWidth={2.5} />, label: 'Envíos a todo el Perú' },

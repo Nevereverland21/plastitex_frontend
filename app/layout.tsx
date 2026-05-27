@@ -1,24 +1,3 @@
-// app/layout.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// CAMBIOS vs versión anterior:
-//
-// 1. suppressHydrationWarning en <html> → elimina warnings de hidratación que
-//    generan renders extra y contribuyen al flash visual.
-//
-// 2. Inter con display: 'swap' → la fuente no bloquea el render. El texto
-//    aparece de inmediato con fuente del sistema y swapea sin reflow visible.
-//
-// 3. viewport meta explícito → controla el comportamiento inicial del viewport
-//    en móvil para evitar zooms/reflows al cargar.
-//
-// 4. Metadata mejorada con Open Graph → mejor SEO y preview en redes sociales.
-//
-// 5. pt responsivo → el navbar nuevo tiene alturas distintas por breakpoint:
-//    - mobile:  navbar 80px + buscador 52px         = 132px
-//    - md:      navbar 80px (buscador inline)       = 80px
-//    - lg+:     top bar 32px + navbar 80px          = 112px
-// ─────────────────────────────────────────────────────────────────────────────
-
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -48,6 +27,12 @@ export const metadata: Metadata = {
     locale: 'es_PE',
     type: 'website',
   },
+    icons: {
+    icon: '/isotipo-plastitex.png',
+    shortcut: '/isotipo-plastitex.png',
+    apple: '/isotipo-plastitex.png',
+  },
+
 };
 
 // Viewport separado de metadata (Next.js 14+)

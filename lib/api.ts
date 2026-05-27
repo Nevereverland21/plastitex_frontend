@@ -11,7 +11,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ProductFilters {
-  category?: string;   // slug de categoría
+  category?: string;   // slug de categoría (o varios separados por coma)
   featured?: boolean;
   min_price?: number;
   max_price?: number;
@@ -23,6 +23,30 @@ export interface ProductFilters {
   limit?: number;      // solo para modo hero (sin paginación)
 }
 
+// ─── Helper: normalizar respuestas que pueden venir paginadas o planas ───────
+function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
+    return data.results;
+  }
+  return [];
+}
+
+const isDev = process.env.NODE_ENV === 'development';
+
+function cacheOptions(tags: string[]): RequestInit {
+  if (isDev) {
+    return { cache: 'no-store' };
+  }
+  return {
+    next: {
+      tags,
+      // Fallback: aunque no llegue la señal de revalidación, refresca cada hora
+      revalidate: 3600,
+    },
+  };
+}
+
 // ─── Instancia axios (Client Components) ─────────────────────────────────────
 
 const api = axios.create({
@@ -31,16 +55,13 @@ const api = axios.create({
 });
 
 // ─── CLIENT SIDE (axios) — para catálogo con filtros dinámicos ───────────────
+// El cliente no necesita tags porque hace fetch en cada interacción del usuario.
 
 export async function getCategories(): Promise<Category[]> {
   const { data } = await api.get('/api/categories/');
-  return data;
+  return unwrapList<Category>(data);
 }
 
-/**
- * Productos paginados para el catálogo client-side.
- * Devuelve PaginatedResponse con count, next, previous, results.
- */
 export async function getProducts(
   filters?: ProductFilters
 ): Promise<PaginatedResponse<Product>> {
@@ -58,42 +79,46 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return data;
 }
 
-// ─── SERVER SIDE (fetch nativo con caché de Next.js) ─────────────────────────
+// ─── SERVER SIDE (fetch nativo con caché + tags revalidables) ────────────────
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 /**
  * Para el HERO: pide ?featured=true&limit=5
- * El backend devuelve array plano (sin paginar).
- * Caché de 60s — los destacados cambian poco.
+ * Tags: 'products-featured', 'products'
+ *
+ * Cuando Django avisa que cambió un producto destacado, este fetch se invalida
+ * y el próximo render muestra los datos nuevos.
  */
 export async function getProductsServer(params?: {
   featured?: boolean;
   limit?: number;
-  revalidate?: number;
 }): Promise<Product[]> {
-  const { revalidate = 60, ...filters } = params ?? {};
-
   const url = new URL(`${BASE_URL}/api/products/`);
-  if (filters.featured !== undefined) {
-    url.searchParams.set('featured', String(filters.featured));
+  if (params?.featured !== undefined) {
+    url.searchParams.set('featured', String(params.featured));
   }
-  if (filters.limit) {
-    url.searchParams.set('limit', String(filters.limit));
+  if (params?.limit) {
+    url.searchParams.set('limit', String(params.limit));
   }
 
-  const res = await fetch(url.toString(), { next: { revalidate } });
+  // Tags: si es featured, incluye el tag específico
+  const tags = params?.featured
+    ? ['products', 'products-featured']
+    : ['products'];
+
+  const res = await fetch(url.toString(), cacheOptions(tags));
   if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  return unwrapList<Product>(data);
 }
 
 /**
  * Para el CATÁLOGO server-side: devuelve respuesta paginada.
- * Caché corto (30s) porque los filtros varían por URL.
+ * Tags: 'products'
  */
 export async function getProductsPaginated(
   filters?: ProductFilters,
-  revalidate = 30
 ): Promise<PaginatedResponse<Product>> {
   const url = new URL(`${BASE_URL}/api/products/`);
 
@@ -105,19 +130,36 @@ export async function getProductsPaginated(
     });
   }
 
-  const res = await fetch(url.toString(), { next: { revalidate } });
+  const res = await fetch(url.toString(), cacheOptions(['products']));
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
 
 /**
  * Categorías server-side.
- * Caché largo (5 min) — las categorías cambian muy poco.
+ * Tags: 'categories'
+ *
+ * Cuando Django avisa que cambió una categoría, este fetch se invalida.
  */
-export async function getCategoriesServer(revalidate = 300): Promise<Category[]> {
-  const res = await fetch(`${BASE_URL}/api/categories/`, {
-    next: { revalidate },
-  });
+export async function getCategoriesServer(): Promise<Category[]> {
+  const res = await fetch(
+    `${BASE_URL}/api/categories/`,
+    cacheOptions(['categories']),
+  );
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  const data = await res.json();
+  return unwrapList<Category>(data);
+}
+
+/**
+ * Detalle de producto server-side.
+ * Tags: 'product:{slug}'
+ */
+export async function getProductBySlugServer(slug: string): Promise<Product> {
+  const res = await fetch(
+    `${BASE_URL}/api/products/${slug}/`,
+    cacheOptions(['products', `product:${slug}`]),
+  );
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
