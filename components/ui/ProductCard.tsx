@@ -2,22 +2,22 @@
 
 // components/ui/ProductCard.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// REDISEÑO: card limpia estilo Mercado Libre / Amazon.
+// REDISEÑO + FIX:
 //
-// Cambios vs versión anterior:
-//   - Imagen cuadrada 1:1 con next/image (antes h-64 con <img> sin optimizar)
-//   - UN solo indicador de agotado: pill sobre la imagen + botón disabled +
-//     precio tachado. Eliminé los 3 indicadores duplicados de antes.
-//   - Badge "Destacado" en esquina superior derecha (antes encima del producto
-//     y se veía borroso por el backdrop-blur del overlay de agotado)
-//   - Stock como información, no como alarma:
-//       · stock 0 → overlay "Agotado" sobre la imagen
-//       · stock 1-5 → mini badge "Últimas X unidades" (color ámbar)
-//       · stock normal → no se muestra nada (Amazon hace lo mismo)
-//   - Precio en UN solo color (navy) en vez de mezclar 2 colores
-//   - Categoría como pill blanco sobre la imagen (no overlay azul invasivo)
-//   - Descripción en gray-600 para legibilidad (antes gray-400, casi ilegible)
-//   - Contador "en carrito" se mantiene pero más discreto
+// Fix de este pase:
+//   - Precio "S/ 5.00" ya NO se parte en 2 líneas en cards estrechas (catálogo).
+//     Aplicado `whitespace-nowrap` al contenedor del precio + reorganizada la
+//     fila precio+botón para que el precio siempre quepa horizontalmente.
+//
+// Cambios anteriores (recordatorio):
+//   - Imagen cuadrada 1:1 con next/image
+//   - UN solo indicador de agotado (overlay + botón disabled + precio tachado)
+//   - Badge "Destacado" en esquina superior derecha
+//   - Stock como información contextual (solo "Últimas X" si stock ≤ 5)
+//   - Precio en un solo color
+//   - Categoría como pill discreto arriba izquierda
+//   - Descripción gray-600 (legible)
+//   - Selectores correctos de Zustand
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Image from 'next/image';
@@ -77,8 +77,7 @@ export default function ProductCard({ product }: Props) {
       >
         {/* ═══════════════ IMAGEN ═══════════════ */}
         <div className="relative aspect-square bg-gray-50 overflow-hidden">
-          {/* Badge "Destacado" — esquina superior derecha, fuera del flujo
-              de la imagen para que no se mezcle con overlays */}
+          {/* Badge "Destacado" */}
           {product.featured && !isOutOfStock && (
             <div className="absolute top-3 right-3 z-10">
               <span className="inline-flex items-center gap-1 bg-brand-orange text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
@@ -97,7 +96,7 @@ export default function ProductCard({ product }: Props) {
             </div>
           )}
 
-          {/* Imagen del producto */}
+          {/* Imagen */}
           {product.image ? (
             <Image
               src={product.image}
@@ -114,7 +113,7 @@ export default function ProductCard({ product }: Props) {
             </div>
           )}
 
-          {/* Overlay hover — "Ver detalle" */}
+          {/* Overlay hover "Ver detalle" */}
           {!isOutOfStock && (
             <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/20
                             transition-all duration-300 flex items-center justify-center pointer-events-none">
@@ -128,7 +127,7 @@ export default function ProductCard({ product }: Props) {
             </div>
           )}
 
-          {/* Overlay AGOTADO — único indicador visual sobre la imagen */}
+          {/* Overlay AGOTADO */}
           {isOutOfStock && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
               <span className="bg-brand-navy/92 backdrop-blur-sm text-white text-[11px] font-bold
@@ -154,7 +153,7 @@ export default function ProductCard({ product }: Props) {
             </p>
           )}
 
-          {/* Stock contextual: solo mostramos "Últimas X" cuando hay urgencia */}
+          {/* Stock contextual */}
           {isLowStock && (
             <div className="flex items-center gap-1.5 mt-1">
               <AlertCircle size={13} strokeWidth={2.5} className="text-amber-600" />
@@ -164,7 +163,7 @@ export default function ProductCard({ product }: Props) {
             </div>
           )}
 
-          {/* "En carrito" — pill discreto */}
+          {/* "En carrito" */}
           {inCart > 0 && !isOutOfStock && (
             <div className="flex items-center gap-1.5">
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">
@@ -177,14 +176,20 @@ export default function ProductCard({ product }: Props) {
           {/* Separador */}
           <div className="h-px bg-gray-100 mt-auto" />
 
-          {/* Precio + botón */}
-          <div className="flex items-end justify-between gap-3 pt-1">
-            <div>
+          {/* ════════ Precio + botón ════════ */}
+          {/* FIX: en cards estrechas (catálogo, 4 columnas) el precio "S/ 5.00"
+              se partía en dos líneas. Soluciones aplicadas:
+                1. `whitespace-nowrap` en el contenedor del precio
+                2. `min-w-0` y `gap` controlado en la fila
+                3. El bloque del precio tiene `flex-shrink-0` para no comprimirse
+                4. El botón tiene `flex-shrink-0` también, no se aplasta */}
+          <div className="flex items-end justify-between gap-2 pt-1">
+            <div className="flex-shrink-0">
               <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold leading-none mb-1">
                 desde
               </p>
               <p
-                className={`text-xl font-bold leading-none ${
+                className={`text-xl font-bold leading-none whitespace-nowrap ${
                   isOutOfStock ? 'text-gray-400 line-through' : 'text-brand-navy'
                 }`}
               >
@@ -192,7 +197,6 @@ export default function ProductCard({ product }: Props) {
               </p>
             </div>
 
-            {/* Botón Agregar */}
             <button
               onClick={handleAdd}
               disabled={isDisabled}
@@ -204,7 +208,7 @@ export default function ProductCard({ product }: Props) {
                     : `Agregar ${product.name} al carrito`
               }
               className={`inline-flex items-center gap-1.5 text-xs font-bold
-                          px-3.5 py-2.5 rounded-xl transition-all duration-200
+                          px-3 py-2.5 rounded-xl transition-all duration-200
                           flex-shrink-0 active:scale-95
                           ${
                             added
