@@ -22,17 +22,16 @@ export default function CartSidebar() {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-white z-50 shadow-2xl
+                    flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Tu carrito</h2>
-          <button
-            onClick={closeCart}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors duration-200"
-          >
+          <button onClick={closeCart}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -45,62 +44,68 @@ export default function CartSidebar() {
               <p className="text-sm">Tu carrito está vacío</p>
             </div>
           ) : (
-            items.map(({ product, quantity }) => (
-              <div
-                key={product.id}
-                className="flex gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
-              >
-                {/* Imagen */}
-                <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
-                  )}
-                </div>
+            items.map(({ product, quantity, unit_price_override, selected_extras }) => {
+              const price = parseFloat(unit_price_override ?? product.base_price);
+              return (
+                <div key={product.id}
+                  className="flex gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {product.name}
-                  </p>
-                  <p className="text-sm text-blue-600 font-semibold mt-1">
-                    S/ {parseFloat(product.price).toFixed(2)}
-                  </p>
+                  {/* Imagen */}
+                  <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
+                    {product.image ? (
+                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
+                    )}
+                  </div>
 
-                  {/* Cantidad */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity - 1)}
-                      className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm font-bold transition-colors duration-200"
-                    >
-                      −
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+
+                    {/* Precio unitario */}
+                    <p className="text-sm text-brand-navy font-semibold mt-0.5">
+                      S/ {price.toFixed(2)} c/u
+                    </p>
+
+                    {/* Extras si los tiene */}
+                    {selected_extras && selected_extras.length > 0 && (
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">
+                        + {selected_extras.map((e) => e.name).join(', ')}
+                      </p>
+                    )}
+
+                    {/* Cantidad */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        onClick={() => updateQuantity(product.id, quantity - 1)}
+                        className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300
+                                   flex items-center justify-center text-sm font-bold transition-colors">
+                        −
+                      </button>
+                      <span className="text-sm font-medium w-8 text-center">{quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(product.id, quantity + 1)}
+                        className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300
+                                   flex items-center justify-center text-sm font-bold transition-colors">
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Subtotal + eliminar */}
+                  <div className="flex flex-col items-end justify-between self-stretch">
+                    <button onClick={() => removeItem(product.id)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors">
+                      <Trash2 size={16} />
                     </button>
-                    <span className="text-sm font-medium w-4 text-center">
-                      {quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(product.id, quantity + 1)}
-                      className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm font-bold transition-colors duration-200"
-                    >
-                      +
-                    </button>
+                    <p className="text-sm font-bold text-brand-navy">
+                      S/ {(price * quantity).toFixed(2)}
+                    </p>
                   </div>
                 </div>
-
-                {/* Eliminar */}
-                <button
-                  onClick={() => removeItem(product.id)}
-                  className="p-1 text-gray-400 hover:text-red-500 transition-colors duration-200 self-start"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -108,16 +113,15 @@ export default function CartSidebar() {
         {items.length > 0 && (
           <div className="px-6 py-5 border-t border-gray-100 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600 text-sm">Total</span>
-              <span className="text-xl font-bold text-gray-900">
+              <span className="text-gray-600 text-sm">Total estimado</span>
+              <span className="text-xl font-bold text-brand-navy">
                 S/ {total.toFixed(2)}
               </span>
             </div>
-            <Link
-              href="/checkout"
-              onClick={closeCart}
-              className="block w-full bg-gray-900 hover:bg-blue-600 text-white text-center py-3 rounded-full font-medium transition-all duration-200 hover:scale-105"
-            >
+            <Link href="/checkout" onClick={closeCart}
+              className="block w-full bg-brand-navy hover:bg-brand-orange text-white
+                         text-center py-3 rounded-full font-semibold text-sm
+                         transition-all duration-200 hover:scale-105">
               Proceder al pago
             </Link>
           </div>
