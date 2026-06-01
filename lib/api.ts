@@ -1,29 +1,44 @@
 import axios from 'axios';
-import { Category, Product, CreateOrderPayload, Order } from '@/types';
+import type {
+  Category,
+  Product,
+  ProductDetail,
+  QuoteResponse,
+  CreateOrderPayload,
+  Order,
+  CreateComplaintPayload,
+  CreateJobApplicationPayload,
+} from '@/types';
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── Tipos de respuesta ───────────────────────────────────────────────────────
 
 export interface PaginatedResponse<T> {
-  count: number;       // total de items en la DB
-  next: string | null; // URL de la siguiente página (null si es la última)
+  count: number;
+  next: string | null;
   previous: string | null;
-  results: T[];        // items de esta página
+  results: T[];
 }
 
 export interface ProductFilters {
-  category?: string;   // slug de categoría (o varios separados por coma)
+  category?: string;
   featured?: boolean;
   min_price?: number;
   max_price?: number;
   in_stock?: boolean;
   search?: string;
-  ordering?: 'price' | '-price' | 'name' | '-name' | 'created_at' | '-created_at';
+  ordering?: 'base_price' | '-base_price' | 'name' | '-name' | 'created_at' | '-created_at';
   page?: number;
   page_size?: number;
-  limit?: number;      // solo para modo hero (sin paginación)
+  limit?: number;
 }
 
-// ─── Helper: normalizar respuestas que pueden venir paginadas o planas ───────
+export interface QuoteParams {
+  quantity: number;
+  extra_ids?: number[];
+}
+
+// ─── Helper ───────────────────────────────────────────────────────────────────
+
 function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
@@ -35,27 +50,18 @@ function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
 const isDev = process.env.NODE_ENV === 'development';
 
 function cacheOptions(tags: string[]): RequestInit {
-  if (isDev) {
-    return { cache: 'no-store' };
-  }
-  return {
-    next: {
-      tags,
-      // Fallback: aunque no llegue la señal de revalidación, refresca cada hora
-      revalidate: 3600,
-    },
-  };
+  if (isDev) return { cache: 'no-store' };
+  return { next: { tags, revalidate: 3600 } };
 }
 
-// ─── Instancia axios (Client Components) ─────────────────────────────────────
+// ─── Instancia axios (Client Components) ──────────────────────────────────────
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── CLIENT SIDE (axios) — para catálogo con filtros dinámicos ───────────────
-// El cliente no necesita tags porque hace fetch en cada interacción del usuario.
+// ─── CLIENT SIDE (axios) ──────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<Category[]> {
   const { data } = await api.get('/api/categories/');
@@ -69,8 +75,28 @@ export async function getProducts(
   return data;
 }
 
-export async function getProductBySlug(slug: string): Promise<Product> {
+export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   const { data } = await api.get(`/api/products/${slug}/`);
+  return data;
+}
+
+/**
+ * Cotizador en tiempo real.
+ * Llama a GET /api/products/{slug}/quote/?quantity=500&extra_ids=1,2
+ */
+export async function getProductQuote(
+  slug: string,
+  params: QuoteParams
+): Promise<QuoteResponse> {
+  const queryParams: Record<string, string> = {
+    quantity: String(params.quantity),
+  };
+  if (params.extra_ids && params.extra_ids.length > 0) {
+    queryParams.extra_ids = params.extra_ids.join(',');
+  }
+  const { data } = await api.get(`/api/products/${slug}/quote/`, {
+    params: queryParams,
+  });
   return data;
 }
 
@@ -79,17 +105,51 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return data;
 }
 
-// ─── SERVER SIDE (fetch nativo con caché + tags revalidables) ────────────────
+/**
+ * Estado del pedido (semáforo).
+ * Llama a GET /api/orders/{id}/
+ */
+export async function getOrderStatus(orderId: number): Promise<Order> {
+  const { data } = await api.get(`/api/orders/${orderId}/`);
+  return data;
+}
+
+/**
+ * Enviar reclamo desde el footer.
+ */
+export async function createComplaint(
+  payload: CreateComplaintPayload
+): Promise<{ message: string }> {
+  const { data } = await api.post('/api/complaints/', payload);
+  return data;
+}
+
+/**
+ * Enviar postulación desde "Trabaja con nosotros".
+ * Usa FormData para soportar subida de CV en PDF.
+ */
+export async function createJobApplication(
+  payload: CreateJobApplicationPayload,
+  cvFile?: File
+): Promise<{ message: string }> {
+  const formData = new FormData();
+  formData.append('full_name', payload.full_name);
+  formData.append('email', payload.email);
+  formData.append('phone', payload.phone);
+  if (payload.position) formData.append('position', payload.position);
+  if (payload.message) formData.append('message', payload.message);
+  if (cvFile) formData.append('cv_file', cvFile);
+
+  const { data } = await api.post('/api/job-applications/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+}
+
+// ─── SERVER SIDE (fetch nativo con caché + tags revalidables) ─────────────────
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
-/**
- * Para el HERO: pide ?featured=true&limit=5
- * Tags: 'products-featured', 'products'
- *
- * Cuando Django avisa que cambió un producto destacado, este fetch se invalida
- * y el próximo render muestra los datos nuevos.
- */
 export async function getProductsServer(params?: {
   featured?: boolean;
   limit?: number;
@@ -101,27 +161,19 @@ export async function getProductsServer(params?: {
   if (params?.limit) {
     url.searchParams.set('limit', String(params.limit));
   }
-
-  // Tags: si es featured, incluye el tag específico
   const tags = params?.featured
     ? ['products', 'products-featured']
     : ['products'];
-
   const res = await fetch(url.toString(), cacheOptions(tags));
   if (!res.ok) throw new Error(`API error ${res.status}`);
   const data = await res.json();
   return unwrapList<Product>(data);
 }
 
-/**
- * Para el CATÁLOGO server-side: devuelve respuesta paginada.
- * Tags: 'products'
- */
 export async function getProductsPaginated(
   filters?: ProductFilters,
 ): Promise<PaginatedResponse<Product>> {
   const url = new URL(`${BASE_URL}/api/products/`);
-
   if (filters) {
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -129,18 +181,11 @@ export async function getProductsPaginated(
       }
     });
   }
-
   const res = await fetch(url.toString(), cacheOptions(['products']));
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
 
-/**
- * Categorías server-side.
- * Tags: 'categories'
- *
- * Cuando Django avisa que cambió una categoría, este fetch se invalida.
- */
 export async function getCategoriesServer(): Promise<Category[]> {
   const res = await fetch(
     `${BASE_URL}/api/categories/`,
@@ -153,13 +198,18 @@ export async function getCategoriesServer(): Promise<Category[]> {
 
 /**
  * Detalle de producto server-side.
- * Tags: 'product:{slug}'
+ * Usado en /productos/[slug] para SSR + ISR.
  */
-export async function getProductBySlugServer(slug: string): Promise<Product> {
+export async function getProductDetailServer(slug: string): Promise<ProductDetail> {
   const res = await fetch(
     `${BASE_URL}/api/products/${slug}/`,
     cacheOptions(['products', `product:${slug}`]),
   );
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
+}
+
+// Alias para compatibilidad con código existente
+export async function getProductBySlugServer(slug: string): Promise<ProductDetail> {
+  return getProductDetailServer(slug);
 }

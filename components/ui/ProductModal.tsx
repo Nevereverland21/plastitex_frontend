@@ -128,7 +128,7 @@ export default function ProductModal({ product, onClose }: Props) {
         `Estoy interesado en el siguiente producto:\n\n` +
         `📦 *${product.name}*\n` +
         `🏷️ Categoría: ${product.category_name}\n` +
-        `💰 Precio referencial: S/ ${parseFloat(product.price).toFixed(2)}\n\n` +
+        `💰 Precio desde: S/ ${parseFloat(product.starting_price ?? product.base_price).toFixed(2)}\n\n` +
         `¿Me pueden brindar más información?`,
     );
     window.open(url, '_blank');
@@ -137,7 +137,8 @@ export default function ProductModal({ product, onClose }: Props) {
   // ─── No renderizar si no hay producto o aún no se montó el portal ─────────
   if (!product || !mounted) return null;
 
-  const price = parseFloat(product.price).toFixed(2);
+  const price = parseFloat(product.starting_price ?? product.base_price).toFixed(2);
+
 
   // ─── Modal renderizado en document.body vía portal ────────────────────────
   const modal = (
