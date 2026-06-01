@@ -8,7 +8,7 @@ import {
   Lightbulb, Leaf, ShieldCheck, Star,
   ChevronRight, MessageCircle,
   Target, Globe, Flag,
-  Wrench, Printer, FlaskConical,
+  Printer, FlaskConical,
   Truck, HardHat, Settings2,
 } from 'lucide-react';
 

@@ -11,7 +11,7 @@ import {
   BadgeCheck, Clock,
 } from 'lucide-react';
 import { getProductBySlug, getProductQuote } from '@/lib/api';
-import type { ProductDetail, PricingTier, ProductExtra, QuoteResponse } from '@/types';
+import type { ProductDetail, PricingTier, QuoteResponse } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { WHATSAPP } from '@/lib/config';
 
@@ -137,6 +137,7 @@ export default function ProductPage() {
         featured: product.featured,
         category_name: product.category.name,
         category_slug: product.category.slug,
+        pricing_tiers: product.pricing_tiers,
       },
       {
         quantity,
