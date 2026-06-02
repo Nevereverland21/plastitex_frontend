@@ -25,7 +25,7 @@ export default function Footer() {
           <div className="lg:col-span-1">
             <div className="mb-5">
               <Image
-                src="/logo-plastitex.png"
+                src="/logo_sin_frase.png"
                 alt="Plastitex"
                 width={180}
                 height={55}

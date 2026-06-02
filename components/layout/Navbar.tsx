@@ -132,7 +132,7 @@ export default function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 flex items-center" aria-label="Plastitex - Inicio">
-              <Image src="/logo-plastitex.png" alt="Plastitex" width={180} height={55} priority
+              <Image src="/logo_sin_frase.png" alt="Plastitex" width={180} height={55} priority
                 className="hidden sm:block h-11 w-auto" />
               <Image src="/isotipo-plastitex.png" alt="Plastitex" width={40} height={44} priority
                 className="sm:hidden h-11 w-auto" />
