@@ -17,22 +17,24 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, {  }) => {
+  webpack: (config, { isServer }) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
-    // Decirle a webpack que trate estos paquetes como externos en ambos lados
-    const libs = ['onnxruntime-web', '@imgly/background-removal'];
-
-    config.externals = [
-      ...(Array.isArray(config.externals) ? config.externals : []),
-      ...libs,
-    ];
-
-    // Regla para que webpack no intente parsear estos archivos
-    config.module.rules.push({
-      test: /node_modules\/(onnxruntime-web|@imgly\/background-removal)\/.*/,
-      use: 'null-loader',
-    });
+    if (isServer) {
+      // En el servidor: marcar como externos
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : []),
+        'onnxruntime-web',
+        '@imgly/background-removal',
+      ];
+    } else {
+      // En el cliente: reemplazar con módulos vacíos
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'onnxruntime-web': false,
+        '@imgly/background-removal': false,
+      };
+    }
 
     config.resolve.fallback = {
       ...config.resolve.fallback,
