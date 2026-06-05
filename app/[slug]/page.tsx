@@ -17,7 +17,14 @@ import type { ProductDetail, PricingTier, QuoteResponse } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { WHATSAPP } from '@/lib/config';
 // ── NUEVOS imports ────────────────────────────────────────────────────────────
-import CustomizerModal from '@/components/customizer/CustomizerModal';
+
+import dynamic from 'next/dynamic';
+
+const CustomizerModal = dynamic(
+  () => import('@/components/customizer/CustomizerModal'),
+  { ssr: false }
+);
+
 import type { CustomizationData } from '@/types/customizer';
 import { EMPTY_CUSTOMIZATION } from '@/types/customizer';
 
@@ -727,3 +734,5 @@ function TrustBadge({ icon, text }: { icon: string; text: string }) {
     </div>
   );
 }
+
+
