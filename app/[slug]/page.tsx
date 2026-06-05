@@ -96,7 +96,7 @@ export default function ProductPage() {
       })
       .catch(() => router.push('/catalogo'))
       .finally(() => setLoading(false));
-  }, [slug]);
+  }, [slug, router]);
 
   // ── Cotizar en tiempo real ────────────────────────────────────────────────
   useEffect(() => {

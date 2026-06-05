@@ -142,12 +142,12 @@ export default function CustomizerModal({
                     touchAction: 'none',
                     display: 'block',
                   }}
-                  onMouseDown={onPointerDown as any}
-                  onMouseMove={onPointerMove as any}
+                  onMouseDown={onPointerDown as React.MouseEventHandler<HTMLCanvasElement>}
+                  onMouseMove={onPointerMove as React.MouseEventHandler<HTMLCanvasElement>}
                   onMouseUp={onPointerUp}
                   onMouseLeave={onPointerUp}
-                  onTouchStart={onPointerDown as any}
-                  onTouchMove={onPointerMove as any}
+                  onTouchStart={onPointerDown as React.TouchEventHandler<HTMLCanvasElement>}
+                  onTouchMove={onPointerMove as React.TouchEventHandler<HTMLCanvasElement>}
                   onTouchEnd={onPointerUp}
                 />
               </div>
