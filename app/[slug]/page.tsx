@@ -9,11 +9,17 @@ import {
   ChevronDown, ChevronUp, Download, MessageCircle,
   ShoppingCart, Loader2, Info, Truck, Store,
   BadgeCheck, Clock,
+  // ── NUEVO ──
+  Sparkles, PenLine,
 } from 'lucide-react';
 import { getProductBySlug, getProductQuote } from '@/lib/api';
 import type { ProductDetail, PricingTier, QuoteResponse } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { WHATSAPP } from '@/lib/config';
+// ── NUEVOS imports ────────────────────────────────────────────────────────────
+import CustomizerModal from '@/components/customizer/CustomizerModal';
+import type { CustomizationData } from '@/types/customizer';
+import { EMPTY_CUSTOMIZATION } from '@/types/customizer';
 
 // ─── Constante mayorista ──────────────────────────────────────────────────────
 const WHOLESALE_THRESHOLD = 1000;
@@ -61,6 +67,10 @@ export default function ProductPage() {
   const [addedToCart, setAddedToCart] = useState(false);
   const configuratorRef = useRef<HTMLDivElement>(null);
 
+  // ── NUEVO: Estado del personalizador ─────────────────────────────────────
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [customization, setCustomization] = useState<CustomizationData>(EMPTY_CUSTOMIZATION);
+
   // Debounce de cantidad para no llamar a la API en cada tecla
   const debouncedQuantity = useDebounce(quantity, 400);
   const debouncedExtras = useDebounce(selectedExtras, 300);
@@ -71,7 +81,6 @@ export default function ProductPage() {
     getProductBySlug(slug)
       .then((p) => {
         setProduct(p);
-        // Iniciar con la cantidad mínima del primer tier
         const firstTier = p.pricing_tiers?.[0];
         if (firstTier) {
           setQuantity(firstTier.min_quantity);
@@ -121,10 +130,22 @@ export default function ProductPage() {
     );
   };
 
+  // ── MODIFICADO: handleAddToCart incluye customization_notes ──────────────
   const handleAddToCart = () => {
     if (!product || !quote) return;
+
+    // Construir nota de personalización combinando logo + notas libres
+    let custNotes = '';
+    if (customization.hasCustomization) {
+      if (customization.logoDataUrl) custNotes += '[Logo personalizado adjunto] ';
+      if (customization.customizationNotes) custNotes += customization.customizationNotes;
+    }
+    if (selectedExtras.length > 0) {
+      const extrasText = `Extras: ${quote.extras_detail.map((e) => e.name).join(', ')}`;
+      custNotes = custNotes ? `${custNotes} | ${extrasText}` : extrasText;
+    }
+
     addItem(
-      // ProductDetail → Product (compatible con el carrito)
       {
         id: product.id,
         name: product.name,
@@ -132,7 +153,7 @@ export default function ProductPage() {
         description: product.description,
         base_price: product.base_price,
         starting_price: product.base_price,
-        image: product.image,
+        image: customization.logoPreviewUrl ?? product.image, // ← preview con logo si existe
         stock: product.stock,
         featured: product.featured,
         category_name: product.category.name,
@@ -143,9 +164,7 @@ export default function ProductPage() {
         quantity,
         unit_price_override: quote.unit_price,
         selected_extras: quote.extras_detail,
-        customization_notes: selectedExtras.length > 0
-          ? `Extras: ${quote.extras_detail.map((e) => e.name).join(', ')}`
-          : undefined,
+        customization_notes: custNotes || undefined,
       }
     );
     setAddedToCart(true);
@@ -157,15 +176,26 @@ export default function ProductPage() {
     const extrasText = quote.extras_detail.length > 0
       ? `\nExtras: ${quote.extras_detail.map((e) => e.name).join(', ')}`
       : '';
+    // ── NUEVO: incluir notas de personalización en el mensaje de WA ──
+    const custText = customization.customizationNotes
+      ? `\n🎨 Personalización: ${customization.customizationNotes}`
+      : '';
+    const logoText = customization.logoDataUrl ? '\n🖼️ Logo: adjunto al confirmar pedido' : '';
+
     const msg =
       `Hola, me interesa cotizar:\n\n` +
       `📦 *${product.name}*\n` +
       `🔢 Cantidad: ${quantity.toLocaleString()} unidades\n` +
-      `💰 Precio unitario aprox: S/ ${formatPrice(quote.unit_price)}${extrasText}\n` +
+      `💰 Precio unitario aprox: S/ ${formatPrice(quote.unit_price)}${extrasText}${custText}${logoText}\n` +
       `💵 Total estimado: S/ ${formatPrice(quote.total)}\n\n` +
       `¿Pueden confirmar disponibilidad y condiciones?`;
     window.open(WHATSAPP.link(msg), '_blank');
   };
+
+  // ── NUEVO: guardar personalización desde el modal ─────────────────────────
+  const handleSaveCustomization = useCallback((data: CustomizationData) => {
+    setCustomization(data);
+  }, []);
 
   // ── Obtener tier activo ───────────────────────────────────────────────────
   const getActiveTier = useCallback(
@@ -216,9 +246,37 @@ export default function ProductPage() {
           {/* ══════════════ COLUMNA IZQUIERDA — IMAGEN + SPECS ══════════════ */}
           <div className="space-y-4">
 
-            {/* Imagen principal */}
+            {/* Imagen principal — MODIFICADO: muestra preview si hay personalización */}
             <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-sm">
-              {product.image ? (
+              {customization.logoPreviewUrl ? (
+                // ── Preview con logo personalizado ──
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={customization.logoPreviewUrl}
+                    alt={`${product.name} personalizado`}
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
+                  {/* Badge de personalización activa */}
+                  <div className="absolute top-4 left-4 flex items-center gap-1.5
+                                  bg-brand-orange text-white text-xs font-bold
+                                  px-3 py-1.5 rounded-full shadow-md">
+                    <Sparkles size={11} />
+                    Tu diseño
+                  </div>
+                  {/* Botón editar personalización */}
+                  <button
+                    onClick={() => setCustomizerOpen(true)}
+                    className="absolute bottom-4 right-4 flex items-center gap-1.5
+                               bg-white/90 backdrop-blur-sm text-brand-navy text-xs font-semibold
+                               px-3 py-2 rounded-xl shadow-sm border border-gray-100
+                               hover:bg-white hover:shadow-md transition-all"
+                  >
+                    <PenLine size={12} />
+                    Editar diseño
+                  </button>
+                </>
+              ) : product.image ? (
                 <Image
                   src={product.image}
                   alt={product.name}
@@ -233,12 +291,60 @@ export default function ProductPage() {
                   <p className="text-sm mt-3 text-gray-300">Sin imagen</p>
                 </div>
               )}
-              {product.featured && (
+              {product.featured && !customization.logoPreviewUrl && (
                 <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
                   ⭐ Destacado
                 </span>
               )}
             </div>
+
+            {/* ── NUEVO: Botón de personalización (debajo de la imagen) ── */}
+            <button
+              onClick={() => setCustomizerOpen(true)}
+              className={`
+                w-full flex items-center justify-between px-5 py-4 rounded-2xl
+                border-2 transition-all group
+                ${customization.hasCustomization
+                  ? 'border-brand-orange bg-brand-orange/5 hover:bg-brand-orange/10'
+                  : 'border-dashed border-gray-300 bg-white hover:border-brand-orange hover:bg-brand-orange/5'
+                }
+              `}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`
+                  w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0
+                  ${customization.hasCustomization
+                    ? 'bg-brand-orange text-white'
+                    : 'bg-gray-100 text-gray-500 group-hover:bg-brand-orange/15 group-hover:text-brand-orange'
+                  }
+                `}>
+                  <Sparkles size={18} />
+                </div>
+                <div className="text-left">
+                  <p className={`text-sm font-bold ${customization.hasCustomization ? 'text-brand-orange' : 'text-brand-navy'}`}>
+                    {customization.hasCustomization ? '¡Personalización lista!' : 'Personalizar con mi logo'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {customization.hasCustomization
+                      ? customization.customizationNotes
+                        ? customization.customizationNotes.slice(0, 50) + (customization.customizationNotes.length > 50 ? '…' : '')
+                        : 'Logo aplicado · clic para editar'
+                      : 'Agrega tu logo y especificaciones de diseño'
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className={`
+                flex items-center gap-1 text-xs font-semibold flex-shrink-0
+                ${customization.hasCustomization ? 'text-brand-orange' : 'text-gray-400 group-hover:text-brand-orange'}
+              `}>
+                {customization.hasCustomization ? (
+                  <><PenLine size={13} /> Editar</>
+                ) : (
+                  <>Comenzar <ArrowLeft size={13} className="rotate-180" /></>
+                )}
+              </div>
+            </button>
 
             {/* Ficha técnica descargable */}
             {product.technical_sheet && (
@@ -275,24 +381,12 @@ export default function ProductPage() {
                 {specsOpen && (
                   <div className="px-5 pb-5 border-t border-gray-50">
                     <dl className="grid grid-cols-2 gap-3 mt-4">
-                      {product.material && (
-                        <SpecRow label="Material" value={product.material} />
-                      )}
-                      {product.capacity_ml && (
-                        <SpecRow label="Capacidad" value={`${product.capacity_ml} ml`} />
-                      )}
-                      {product.height_cm && (
-                        <SpecRow label="Alto" value={`${product.height_cm} cm`} />
-                      )}
-                      {product.diameter_cm && (
-                        <SpecRow label="Diámetro" value={`${product.diameter_cm} cm`} />
-                      )}
-                      {product.weight_grams && (
-                        <SpecRow label="Peso" value={`${product.weight_grams} g`} />
-                      )}
-                      {product.packaging && (
-                        <SpecRow label="Empaque" value={product.packaging} />
-                      )}
+                      {product.material && <SpecRow label="Material" value={product.material} />}
+                      {product.capacity_ml && <SpecRow label="Capacidad" value={`${product.capacity_ml} ml`} />}
+                      {product.height_cm && <SpecRow label="Alto" value={`${product.height_cm} cm`} />}
+                      {product.diameter_cm && <SpecRow label="Diámetro" value={`${product.diameter_cm} cm`} />}
+                      {product.weight_grams && <SpecRow label="Peso" value={`${product.weight_grams} g`} />}
+                      {product.packaging && <SpecRow label="Empaque" value={product.packaging} />}
                     </dl>
                   </div>
                 )}
@@ -336,22 +430,18 @@ export default function ProductPage() {
                                    ${isActive ? 'bg-brand-orange/8 border-l-4 border-brand-orange' : 'border-l-4 border-transparent'}`}
                       >
                         <div className="flex items-center gap-3">
-                          {isActive && (
-                            <CheckCircle size={14} className="text-brand-orange flex-shrink-0" strokeWidth={2.5} />
-                          )}
+                          {isActive && <CheckCircle size={14} className="text-brand-orange flex-shrink-0" strokeWidth={2.5} />}
                           {!isActive && <div className="w-[14px]" />}
                           <span className={`text-sm font-semibold ${isActive ? 'text-brand-navy' : 'text-gray-600'}`}>
                             {tier.min_quantity >= 1000
                               ? `${(tier.min_quantity / 1000).toFixed(tier.min_quantity % 1000 === 0 ? 0 : 1)}k`
-                              : tier.min_quantity
-                            }+ unidades
+                              : tier.min_quantity}+ unidades
                           </span>
                         </div>
                         <div className="flex items-center gap-4">
                           {tier.delivery_days && (
                             <span className="text-xs text-gray-400 flex items-center gap-1">
-                              <Clock size={11} />
-                              {tier.delivery_days}d
+                              <Clock size={11} />{tier.delivery_days}d
                             </span>
                           )}
                           <span className={`text-sm font-bold ${isActive ? 'text-brand-orange' : 'text-brand-navy'}`}>
@@ -372,17 +462,11 @@ export default function ProductPage() {
               </label>
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    const n = Math.max(1, quantity - 100);
-                    setQuantity(n);
-                    setQuantityInput(String(n));
-                  }}
+                  onClick={() => { const n = Math.max(1, quantity - 100); setQuantity(n); setQuantityInput(String(n)); }}
                   className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
                              flex items-center justify-center text-brand-navy font-bold
                              transition-all active:scale-95 text-lg flex-shrink-0"
-                >
-                  −
-                </button>
+                >−</button>
                 <input
                   type="number"
                   min={1}
@@ -395,37 +479,24 @@ export default function ProductPage() {
                              transition-all"
                 />
                 <button
-                  onClick={() => {
-                    const n = quantity + 100;
-                    setQuantity(n);
-                    setQuantityInput(String(n));
-                  }}
+                  onClick={() => { const n = quantity + 100; setQuantity(n); setQuantityInput(String(n)); }}
                   className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
                              flex items-center justify-center text-brand-navy font-bold
                              transition-all active:scale-95 text-lg flex-shrink-0"
-                >
-                  +
-                </button>
+                >+</button>
               </div>
-
-              {/* Accesos rápidos a cantidades comunes */}
               <div className="flex flex-wrap gap-2">
                 {[100, 500, 1000, 3000, 5000].map((q) => (
                   <button
                     key={q}
                     onClick={() => { setQuantity(q); setQuantityInput(String(q)); }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                               ${quantity === q
-                                 ? 'bg-brand-navy text-white'
-                                 : 'bg-gray-100 text-gray-600 hover:bg-brand-navy/10 hover:text-brand-navy'
-                               }`}
+                               ${quantity === q ? 'bg-brand-navy text-white' : 'bg-gray-100 text-gray-600 hover:bg-brand-navy/10 hover:text-brand-navy'}`}
                   >
                     {q >= 1000 ? `${q / 1000}k` : q}
                   </button>
                 ))}
               </div>
-
-              {/* Badge mayorista */}
               {isWholesale && (
                 <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                   <Info size={15} className="text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
@@ -444,10 +515,7 @@ export default function ProductPage() {
                 <div className="space-y-2">
                   {product.extras.map((extra) => {
                     const isSelected = selectedExtras.includes(extra.id);
-                    const isFreeFromQty =
-                      extra.included_from_quantity !== null &&
-                      quantity >= extra.included_from_quantity;
-
+                    const isFreeFromQty = extra.included_from_quantity !== null && quantity >= extra.included_from_quantity;
                     return (
                       <button
                         key={extra.id}
@@ -455,12 +523,9 @@ export default function ProductPage() {
                         disabled={extra.is_quote_required}
                         className={`w-full flex items-center justify-between px-4 py-3 rounded-xl
                                    border transition-all text-left
-                                   ${extra.is_quote_required
-                                     ? 'border-gray-100 bg-gray-50 cursor-default opacity-70'
-                                     : isSelected
-                                       ? 'border-brand-orange bg-brand-orange/5 shadow-sm'
-                                       : 'border-gray-100 hover:border-brand-orange/40 hover:bg-gray-50'
-                                   }`}
+                                   ${extra.is_quote_required ? 'border-gray-100 bg-gray-50 cursor-default opacity-70'
+                                     : isSelected ? 'border-brand-orange bg-brand-orange/5 shadow-sm'
+                                     : 'border-gray-100 hover:border-brand-orange/40 hover:bg-gray-50'}`}
                       >
                         <div className="flex items-center gap-3">
                           <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0
@@ -472,18 +537,10 @@ export default function ProductPage() {
                           </span>
                         </div>
                         <span className={`text-xs font-bold flex-shrink-0
-                                          ${extra.is_quote_required
-                                            ? 'text-gray-400'
-                                            : isFreeFromQty
-                                              ? 'text-green-600'
-                                              : 'text-brand-orange'
-                                          }`}>
-                          {extra.is_quote_required
-                            ? 'Cotizar'
-                            : isFreeFromQty
-                              ? `Incluido desde ${extra.included_from_quantity?.toLocaleString()}u`
-                              : `+S/ ${formatPrice(extra.unit_cost)} c/u`
-                          }
+                                          ${extra.is_quote_required ? 'text-gray-400' : isFreeFromQty ? 'text-green-600' : 'text-brand-orange'}`}>
+                          {extra.is_quote_required ? 'Cotizar'
+                            : isFreeFromQty ? `Incluido desde ${extra.included_from_quantity?.toLocaleString()}u`
+                            : `+S/ ${formatPrice(extra.unit_cost)} c/u`}
                         </span>
                       </button>
                     );
@@ -499,29 +556,19 @@ export default function ProductPage() {
                 <button
                   onClick={() => setDeliveryType('pickup')}
                   className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
-                             ${deliveryType === 'pickup'
-                               ? 'border-brand-navy bg-brand-navy/5'
-                               : 'border-gray-100 hover:border-gray-200'
-                             }`}
+                             ${deliveryType === 'pickup' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
                 >
                   <Store size={20} className={deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-400'} />
-                  <span className={`text-xs font-bold ${deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-500'}`}>
-                    Recojo en tienda
-                  </span>
+                  <span className={`text-xs font-bold ${deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-500'}`}>Recojo en tienda</span>
                   <span className="text-[10px] text-green-600 font-semibold">Sin costo</span>
                 </button>
                 <button
                   onClick={() => setDeliveryType('delivery')}
                   className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
-                             ${deliveryType === 'delivery'
-                               ? 'border-brand-navy bg-brand-navy/5'
-                               : 'border-gray-100 hover:border-gray-200'
-                             }`}
+                             ${deliveryType === 'delivery' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
                 >
                   <Truck size={20} className={deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-400'} />
-                  <span className={`text-xs font-bold ${deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-500'}`}>
-                    Delivery
-                  </span>
+                  <span className={`text-xs font-bold ${deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-500'}`}>Delivery</span>
                   <span className="text-[10px] text-gray-400 font-medium">Coordinar costo</span>
                 </button>
               </div>
@@ -531,9 +578,7 @@ export default function ProductPage() {
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
                 <span className="text-sm font-bold text-brand-navy">Resumen de cotización</span>
-                {quoteLoading && (
-                  <Loader2 size={14} className="animate-spin text-brand-orange" />
-                )}
+                {quoteLoading && <Loader2 size={14} className="animate-spin text-brand-orange" />}
               </div>
               <div className="px-5 py-4 space-y-2.5">
                 {quote ? (
@@ -543,11 +588,14 @@ export default function ProductPage() {
                       value={`S/ ${formatPrice(quote.subtotal)}`}
                     />
                     {parseFloat(quote.extras_cost) > 0 && (
-                      <QuoteLine
-                        label="Extras seleccionados"
-                        value={`+ S/ ${formatPrice(quote.extras_cost)}`}
-                        highlight
-                      />
+                      <QuoteLine label="Extras seleccionados" value={`+ S/ ${formatPrice(quote.extras_cost)}`} highlight />
+                    )}
+                    {/* ── NUEVO: mostrar si tiene personalización ── */}
+                    {customization.hasCustomization && (
+                      <div className="flex items-center gap-2 py-1">
+                        <Sparkles size={12} className="text-brand-orange flex-shrink-0" />
+                        <span className="text-xs text-brand-orange font-semibold">Personalización con logo incluida</span>
+                      </div>
                     )}
                     <div className="border-t border-gray-100 pt-3 mt-1">
                       <div className="flex items-end justify-between">
@@ -584,7 +632,6 @@ export default function ProductPage() {
             {/* ── CTAs ── */}
             <div className="space-y-3">
               {!isWholesale ? (
-                // ── Minorista: agregar al carrito ──
                 <button
                   onClick={handleAddToCart}
                   disabled={!quote || quoteLoading}
@@ -604,7 +651,6 @@ export default function ProductPage() {
                   )}
                 </button>
               ) : (
-                // ── Mayorista: solicitar cotización ──
                 <button
                   onClick={handleWhatsAppQuote}
                   className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl
@@ -617,7 +663,6 @@ export default function ProductPage() {
                 </button>
               )}
 
-              {/* Cotizar por WhatsApp (siempre disponible como alternativa) */}
               <button
                 onClick={handleWhatsAppQuote}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl
@@ -640,11 +685,21 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+
+      {/* ── NUEVO: Modal del personalizador ── */}
+      <CustomizerModal
+        isOpen={customizerOpen}
+        onClose={() => setCustomizerOpen(false)}
+        onSave={handleSaveCustomization}
+        productName={product.name}
+        productImageUrl={product.image}
+        initialData={customization.hasCustomization ? customization : undefined}
+      />
     </div>
   );
 }
 
-// ─── Subcomponentes ───────────────────────────────────────────────────────────
+// ─── Subcomponentes (sin cambios) ─────────────────────────────────────────────
 
 function SpecRow({ label, value }: { label: string; value: string }) {
   return (
@@ -655,21 +710,11 @@ function SpecRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function QuoteLine({
-  label,
-  value,
-  highlight = false,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+function QuoteLine({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? 'text-brand-orange' : 'text-brand-navy'}`}>
-        {value}
-      </span>
+      <span className={`text-sm font-semibold ${highlight ? 'text-brand-orange' : 'text-brand-navy'}`}>{value}</span>
     </div>
   );
 }
