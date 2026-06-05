@@ -1,4 +1,7 @@
-import webpack from 'webpack';
+// next.config.mjs
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const webpack = require('next/dist/compiled/webpack/webpack-lib.js');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -22,12 +25,11 @@ const nextConfig = {
   webpack: (config, { isServer }) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
-    const externals = ['onnxruntime-web', '@imgly/background-removal'];
-
     if (isServer) {
       config.externals = [
         ...(Array.isArray(config.externals) ? config.externals : []),
-        ...externals,
+        'onnxruntime-web',
+        '@imgly/background-removal',
       ];
     } else {
       config.plugins.push(
