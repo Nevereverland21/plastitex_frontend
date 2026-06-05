@@ -2,29 +2,27 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import {
-  ArrowLeft, Package, CheckCircle, AlertCircle,
+  ArrowLeft, Package, CheckCircle,
   ChevronDown, ChevronUp, Download, MessageCircle,
   ShoppingCart, Loader2, Info, Truck, Store,
   BadgeCheck, Clock,
-  // ── NUEVO ──
   Sparkles, PenLine,
+  // ── NUEVO: layout compacto + zoom ──
+  ZoomIn, X,
 } from 'lucide-react';
 import { getProductBySlug, getProductQuote } from '@/lib/api';
 import type { ProductDetail, PricingTier, QuoteResponse } from '@/types';
 import { useCartStore } from '@/store/cartStore';
 import { WHATSAPP } from '@/lib/config';
 // ── NUEVOS imports ────────────────────────────────────────────────────────────
-
 import dynamic from 'next/dynamic';
 
 const CustomizerModal = dynamic(
   () => import('@/components/customizer/CustomizerModal'),
   { ssr: false }
 );
-
 import type { CustomizationData } from '@/types/customizer';
 import { EMPTY_CUSTOMIZATION } from '@/types/customizer';
 
@@ -78,6 +76,9 @@ export default function ProductPage() {
   const [customizerOpen, setCustomizerOpen] = useState(false);
   const [customization, setCustomization] = useState<CustomizationData>(EMPTY_CUSTOMIZATION);
 
+  // ── NUEVO: lightbox de zoom de imagen ────────────────────────────────────
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   // Debounce de cantidad para no llamar a la API en cada tecla
   const debouncedQuantity = useDebounce(quantity, 400);
   const debouncedExtras = useDebounce(selectedExtras, 300);
@@ -96,7 +97,7 @@ export default function ProductPage() {
       })
       .catch(() => router.push('/catalogo'))
       .finally(() => setLoading(false));
-  }, [slug, router]);
+  }, [router, slug]);
 
   // ── Cotizar en tiempo real ────────────────────────────────────────────────
   useEffect(() => {
@@ -233,13 +234,15 @@ export default function ProductPage() {
   const isWholesale = quantity >= WHOLESALE_THRESHOLD;
   const activeTier = getActiveTier(product.pricing_tiers, quantity);
   const hasSpecs = product.material || product.capacity_ml || product.height_cm || product.weight_grams;
+  // Imagen que se muestra (preview personalizado o imagen del producto)
+  const displayImage = customization.logoPreviewUrl ?? product.image;
 
   return (
     <div className="min-h-screen bg-brand-light">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
 
         {/* ─── Breadcrumb ─── */}
-        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-8">
+        <nav className="flex items-center gap-2 text-sm text-gray-400 mb-5">
           <Link href="/" className="hover:text-brand-navy transition-colors">Inicio</Link>
           <span>/</span>
           <Link href="/catalogo" className="hover:text-brand-navy transition-colors">Catálogo</Link>
@@ -248,168 +251,151 @@ export default function ProductPage() {
         </nav>
 
         {/* ─── Layout principal ─── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-14">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_440px] gap-6 xl:gap-10 items-start">
 
-          {/* ══════════════ COLUMNA IZQUIERDA — IMAGEN + SPECS ══════════════ */}
-          <div className="space-y-4">
+          {/* ══════════════ COLUMNA IZQUIERDA — IMAGEN STICKY ══════════════ */}
+          <div className="lg:sticky lg:top-6 space-y-3">
 
-            {/* Imagen principal — MODIFICADO: muestra preview si hay personalización */}
-            <div className="relative aspect-square rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-sm">
-              {customization.logoPreviewUrl ? (
-                // ── Preview con logo personalizado ──
+            {/* Imagen principal con zoom */}
+            <div className="group relative aspect-square rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm">
+              {displayImage ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={customization.logoPreviewUrl}
-                    alt={`${product.name} personalizado`}
-                    className="absolute inset-0 w-full h-full object-contain"
+                    src={displayImage}
+                    alt={product.name}
+                    className="absolute inset-0 w-full h-full object-contain p-4"
                   />
-                  {/* Badge de personalización activa */}
-                  <div className="absolute top-4 left-4 flex items-center gap-1.5
-                                  bg-brand-orange text-white text-xs font-bold
-                                  px-3 py-1.5 rounded-full shadow-md">
-                    <Sparkles size={11} />
-                    Tu diseño
-                  </div>
-                  {/* Botón editar personalización */}
+                  {/* Badge de personalización / destacado */}
+                  {customization.logoPreviewUrl ? (
+                    <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                      <Sparkles size={11} /> Tu diseño
+                    </div>
+                  ) : product.featured && (
+                    <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
+                      ⭐ Destacado
+                    </span>
+                  )}
+                  {/* Botón de zoom */}
                   <button
-                    onClick={() => setCustomizerOpen(true)}
-                    className="absolute bottom-4 right-4 flex items-center gap-1.5
-                               bg-white/90 backdrop-blur-sm text-brand-navy text-xs font-semibold
-                               px-3 py-2 rounded-xl shadow-sm border border-gray-100
-                               hover:bg-white hover:shadow-md transition-all"
+                    onClick={() => setLightboxOpen(true)}
+                    className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm
+                               border border-gray-100 flex items-center justify-center text-gray-500
+                               opacity-0 group-hover:opacity-100 hover:bg-white hover:text-brand-navy
+                               shadow-sm transition-all"
+                    title="Ampliar imagen"
                   >
-                    <PenLine size={12} />
-                    Editar diseño
+                    <ZoomIn size={16} />
                   </button>
+                  {/* Botón editar diseño (solo si personalizado) */}
+                  {customization.logoPreviewUrl && (
+                    <button
+                      onClick={() => setCustomizerOpen(true)}
+                      className="absolute bottom-4 right-4 flex items-center gap-1.5 bg-white/90 backdrop-blur-sm
+                                 text-brand-navy text-xs font-semibold px-3 py-2 rounded-xl shadow-sm
+                                 border border-gray-100 hover:bg-white hover:shadow-md transition-all"
+                    >
+                      <PenLine size={12} /> Editar diseño
+                    </button>
+                  )}
                 </>
-              ) : product.image ? (
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  className="object-cover"
-                  priority
-                />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-200">
                   <Package size={80} strokeWidth={1} />
                   <p className="text-sm mt-3 text-gray-300">Sin imagen</p>
                 </div>
               )}
-              {product.featured && !customization.logoPreviewUrl && (
-                <span className="absolute top-4 left-4 bg-brand-orange text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md">
-                  ⭐ Destacado
-                </span>
-              )}
             </div>
 
-            {/* ── NUEVO: Botón de personalización (debajo de la imagen) ── */}
+            {/* Botón de personalización — compacto */}
             <button
               onClick={() => setCustomizerOpen(true)}
-              className={`
-                w-full flex items-center justify-between px-5 py-4 rounded-2xl
-                border-2 transition-all group
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all group
                 ${customization.hasCustomization
                   ? 'border-brand-orange bg-brand-orange/5 hover:bg-brand-orange/10'
-                  : 'border-dashed border-gray-300 bg-white hover:border-brand-orange hover:bg-brand-orange/5'
-                }
-              `}
+                  : 'border-dashed border-gray-300 bg-white hover:border-brand-orange hover:bg-brand-orange/5'}`}
             >
-              <div className="flex items-center gap-3">
-                <div className={`
-                  w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors flex-shrink-0
                   ${customization.hasCustomization
                     ? 'bg-brand-orange text-white'
-                    : 'bg-gray-100 text-gray-500 group-hover:bg-brand-orange/15 group-hover:text-brand-orange'
-                  }
-                `}>
-                  <Sparkles size={18} />
+                    : 'bg-gray-100 text-gray-500 group-hover:bg-brand-orange/15 group-hover:text-brand-orange'}`}>
+                  <Sparkles size={16} />
                 </div>
-                <div className="text-left">
-                  <p className={`text-sm font-bold ${customization.hasCustomization ? 'text-brand-orange' : 'text-brand-navy'}`}>
+                <div className="text-left min-w-0">
+                  <p className={`text-sm font-bold truncate ${customization.hasCustomization ? 'text-brand-orange' : 'text-brand-navy'}`}>
                     {customization.hasCustomization ? '¡Personalización lista!' : 'Personalizar con mi logo'}
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-400 truncate">
                     {customization.hasCustomization
-                      ? customization.customizationNotes
-                        ? customization.customizationNotes.slice(0, 50) + (customization.customizationNotes.length > 50 ? '…' : '')
-                        : 'Logo aplicado · clic para editar'
-                      : 'Agrega tu logo y especificaciones de diseño'
-                    }
+                      ? (customization.customizationNotes
+                          ? customization.customizationNotes.slice(0, 42) + (customization.customizationNotes.length > 42 ? '…' : '')
+                          : 'Logo aplicado · clic para editar')
+                      : 'Agrega tu logo y especificaciones'}
                   </p>
                 </div>
               </div>
-              <div className={`
-                flex items-center gap-1 text-xs font-semibold flex-shrink-0
-                ${customization.hasCustomization ? 'text-brand-orange' : 'text-gray-400 group-hover:text-brand-orange'}
-              `}>
-                {customization.hasCustomization ? (
-                  <><PenLine size={13} /> Editar</>
-                ) : (
-                  <>Comenzar <ArrowLeft size={13} className="rotate-180" /></>
-                )}
-              </div>
+              <span className={`flex items-center gap-1 text-xs font-semibold flex-shrink-0
+                ${customization.hasCustomization ? 'text-brand-orange' : 'text-gray-400 group-hover:text-brand-orange'}`}>
+                {customization.hasCustomization ? <><PenLine size={12} /> Editar</> : <>Comenzar <ArrowLeft size={12} className="rotate-180" /></>}
+              </span>
             </button>
 
-            {/* Ficha técnica descargable */}
-            {product.technical_sheet && (
-              <a
-                href={product.technical_sheet.pdf_file}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 w-full px-5 py-3.5 rounded-2xl
-                           border border-brand-navy/20 bg-white
-                           hover:border-brand-navy hover:bg-brand-navy/5
-                           transition-all group"
-              >
-                <div className="w-9 h-9 rounded-xl bg-brand-navy/10 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-navy/20 transition-colors">
-                  <Download size={16} className="text-brand-navy" strokeWidth={2.5} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-brand-navy">Ficha técnica</p>
-                  <p className="text-xs text-gray-400">Descargar especificaciones en PDF</p>
-                </div>
-                <ArrowLeft size={14} className="text-gray-300 rotate-180 group-hover:translate-x-1 transition-transform" />
-              </a>
-            )}
-
-            {/* Especificaciones técnicas (colapsable) */}
-            {hasSpecs && (
-              <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <button
-                  onClick={() => setSpecsOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold text-brand-navy hover:bg-gray-50 transition-colors"
+            {/* Ficha técnica + specs en una fila compacta */}
+            <div className="grid grid-cols-1 gap-3">
+              {product.technical_sheet && (
+                <a
+                  href={product.technical_sheet.pdf_file}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl border border-brand-navy/20 bg-white
+                             hover:border-brand-navy hover:bg-brand-navy/5 transition-all group"
                 >
-                  <span>Especificaciones técnicas</span>
-                  {specsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                </button>
-                {specsOpen && (
-                  <div className="px-5 pb-5 border-t border-gray-50">
-                    <dl className="grid grid-cols-2 gap-3 mt-4">
-                      {product.material && <SpecRow label="Material" value={product.material} />}
-                      {product.capacity_ml && <SpecRow label="Capacidad" value={`${product.capacity_ml} ml`} />}
-                      {product.height_cm && <SpecRow label="Alto" value={`${product.height_cm} cm`} />}
-                      {product.diameter_cm && <SpecRow label="Diámetro" value={`${product.diameter_cm} cm`} />}
-                      {product.weight_grams && <SpecRow label="Peso" value={`${product.weight_grams} g`} />}
-                      {product.packaging && <SpecRow label="Empaque" value={product.packaging} />}
-                    </dl>
+                  <div className="w-8 h-8 rounded-lg bg-brand-navy/10 flex items-center justify-center flex-shrink-0 group-hover:bg-brand-navy/20 transition-colors">
+                    <Download size={15} className="text-brand-navy" strokeWidth={2.5} />
                   </div>
-                )}
-              </div>
-            )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-brand-navy">Ficha técnica</p>
+                    <p className="text-xs text-gray-400">Descargar PDF</p>
+                  </div>
+                  <ArrowLeft size={14} className="text-gray-300 rotate-180 group-hover:translate-x-1 transition-transform" />
+                </a>
+              )}
+
+              {hasSpecs && (
+                <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+                  <button
+                    onClick={() => setSpecsOpen((v) => !v)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-brand-navy hover:bg-gray-50 transition-colors"
+                  >
+                    <span>Especificaciones técnicas</span>
+                    {specsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+                  {specsOpen && (
+                    <div className="px-4 pb-4 border-t border-gray-50">
+                      <dl className="grid grid-cols-2 gap-2.5 mt-3">
+                        {product.material && <SpecRow label="Material" value={product.material} />}
+                        {product.capacity_ml && <SpecRow label="Capacidad" value={`${product.capacity_ml} ml`} />}
+                        {product.height_cm && <SpecRow label="Alto" value={`${product.height_cm} cm`} />}
+                        {product.diameter_cm && <SpecRow label="Diámetro" value={`${product.diameter_cm} cm`} />}
+                        {product.weight_grams && <SpecRow label="Peso" value={`${product.weight_grams} g`} />}
+                        {product.packaging && <SpecRow label="Empaque" value={product.packaging} />}
+                      </dl>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ══════════════ COLUMNA DERECHA — CONFIGURADOR ══════════════ */}
-          <div ref={configuratorRef} className="space-y-5">
+          <div ref={configuratorRef} className="space-y-4">
 
             {/* Cabecera */}
             <div>
-              <span className="text-brand-orange text-xs font-bold uppercase tracking-[0.2em]">
+              <span className="text-brand-orange text-[11px] font-bold uppercase tracking-[0.2em]">
                 {product.category.name}
               </span>
-              <h1 className="text-3xl sm:text-4xl font-bold text-brand-navy leading-tight mt-1 mb-3">
+              <h1 className="text-2xl sm:text-3xl font-bold text-brand-navy leading-tight mt-1 mb-2">
                 {product.name}
               </h1>
               {product.description && (
@@ -420,7 +406,7 @@ export default function ProductPage() {
             {/* ── Tabla de precios por volumen ── */}
             {product.pricing_tiers.length > 0 && (
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                <div className="px-5 py-3.5 border-b border-gray-50 flex items-center gap-2">
+                <div className="px-4 py-3 border-b border-gray-50 flex items-center gap-2">
                   <BadgeCheck size={15} className="text-brand-orange" strokeWidth={2.5} />
                   <span className="text-sm font-bold text-brand-navy">Precio por volumen</span>
                   <span className="text-xs text-gray-400 ml-auto">Sin IGV</span>
@@ -432,20 +418,19 @@ export default function ProductPage() {
                       <button
                         key={tier.min_quantity}
                         onClick={() => handleTierClick(tier)}
-                        className={`w-full flex items-center justify-between px-5 py-3
+                        className={`w-full flex items-center justify-between px-4 py-2.5
                                    text-left transition-all hover:bg-brand-orange/5
                                    ${isActive ? 'bg-brand-orange/8 border-l-4 border-brand-orange' : 'border-l-4 border-transparent'}`}
                       >
-                        <div className="flex items-center gap-3">
-                          {isActive && <CheckCircle size={14} className="text-brand-orange flex-shrink-0" strokeWidth={2.5} />}
-                          {!isActive && <div className="w-[14px]" />}
+                        <div className="flex items-center gap-2.5">
+                          {isActive ? <CheckCircle size={14} className="text-brand-orange flex-shrink-0" strokeWidth={2.5} /> : <div className="w-[14px]" />}
                           <span className={`text-sm font-semibold ${isActive ? 'text-brand-navy' : 'text-gray-600'}`}>
                             {tier.min_quantity >= 1000
                               ? `${(tier.min_quantity / 1000).toFixed(tier.min_quantity % 1000 === 0 ? 0 : 1)}k`
                               : tier.min_quantity}+ unidades
                           </span>
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                           {tier.delivery_days && (
                             <span className="text-xs text-gray-400 flex items-center gap-1">
                               <Clock size={11} />{tier.delivery_days}d
@@ -463,14 +448,14 @@ export default function ProductPage() {
             )}
 
             {/* ── Selector de cantidad ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
               <label className="text-sm font-bold text-brand-navy block">
                 ¿Cuántas unidades necesitas?
               </label>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => { const n = Math.max(1, quantity - 100); setQuantity(n); setQuantityInput(String(n)); }}
-                  className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
+                  className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
                              flex items-center justify-center text-brand-navy font-bold
                              transition-all active:scale-95 text-lg flex-shrink-0"
                 >−</button>
@@ -480,14 +465,14 @@ export default function ProductPage() {
                   value={quantityInput}
                   onChange={(e) => handleQuantityChange(e.target.value)}
                   onBlur={handleQuantityBlur}
-                  className="flex-1 h-11 text-center text-lg font-bold text-brand-navy
+                  className="flex-1 h-10 text-center text-lg font-bold text-brand-navy
                              border border-gray-200 rounded-xl
                              focus:outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15
                              transition-all"
                 />
                 <button
                   onClick={() => { const n = quantity + 100; setQuantity(n); setQuantityInput(String(n)); }}
-                  className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
+                  className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-brand-navy hover:text-white
                              flex items-center justify-center text-brand-navy font-bold
                              transition-all active:scale-95 text-lg flex-shrink-0"
                 >+</button>
@@ -505,11 +490,11 @@ export default function ProductPage() {
                 ))}
               </div>
               {isWholesale && (
-                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
                   <Info size={15} className="text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
                   <p className="text-xs text-amber-800 leading-relaxed">
                     <span className="font-bold">Pedido mayorista.</span> El precio y tiempo de entrega
-                    están sujetos a confirmación de stock. Un asesor te contactará para cerrar el trato.
+                    están sujetos a confirmación de stock. Un asesor te contactará.
                   </p>
                 </div>
               )}
@@ -517,7 +502,7 @@ export default function ProductPage() {
 
             {/* ── Extras opcionales ── */}
             {product.extras.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2.5">
                 <p className="text-sm font-bold text-brand-navy">Personalización y extras</p>
                 <div className="space-y-2">
                   {product.extras.map((extra) => {
@@ -528,7 +513,7 @@ export default function ProductPage() {
                         key={extra.id}
                         onClick={() => !extra.is_quote_required && toggleExtra(extra.id)}
                         disabled={extra.is_quote_required}
-                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl
+                        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl
                                    border transition-all text-left
                                    ${extra.is_quote_required ? 'border-gray-100 bg-gray-50 cursor-default opacity-70'
                                      : isSelected ? 'border-brand-orange bg-brand-orange/5 shadow-sm'
@@ -556,144 +541,167 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* ── Tipo de entrega ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-              <p className="text-sm font-bold text-brand-navy">Modalidad de entrega</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setDeliveryType('pickup')}
-                  className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
-                             ${deliveryType === 'pickup' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
-                >
-                  <Store size={20} className={deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-400'} />
-                  <span className={`text-xs font-bold ${deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-500'}`}>Recojo en tienda</span>
-                  <span className="text-[10px] text-green-600 font-semibold">Sin costo</span>
-                </button>
-                <button
-                  onClick={() => setDeliveryType('delivery')}
-                  className={`flex flex-col items-center gap-2 py-4 px-3 rounded-xl border-2 transition-all
-                             ${deliveryType === 'delivery' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
-                >
-                  <Truck size={20} className={deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-400'} />
-                  <span className={`text-xs font-bold ${deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-500'}`}>Delivery</span>
-                  <span className="text-[10px] text-gray-400 font-medium">Coordinar costo</span>
-                </button>
-              </div>
-            </div>
-
-            {/* ── Resumen de cotización ── */}
+            {/* ── TARJETA DE COMPRA: entrega + resumen + CTAs (estilo MercadoLibre) ── */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-                <span className="text-sm font-bold text-brand-navy">Resumen de cotización</span>
-                {quoteLoading && <Loader2 size={14} className="animate-spin text-brand-orange" />}
+
+              {/* Entrega — fila horizontal compacta */}
+              <div className="p-4 space-y-2">
+                <p className="text-xs font-bold text-brand-navy uppercase tracking-wide">Entrega</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setDeliveryType('pickup')}
+                    className={`flex items-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all
+                               ${deliveryType === 'pickup' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
+                  >
+                    <Store size={16} className={`flex-shrink-0 ${deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-400'}`} />
+                    <div className="text-left leading-tight">
+                      <span className={`block text-xs font-bold ${deliveryType === 'pickup' ? 'text-brand-navy' : 'text-gray-500'}`}>Recojo</span>
+                      <span className="block text-[10px] text-green-600 font-semibold">Sin costo</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setDeliveryType('delivery')}
+                    className={`flex items-center gap-2 py-2.5 px-3 rounded-xl border-2 transition-all
+                               ${deliveryType === 'delivery' ? 'border-brand-navy bg-brand-navy/5' : 'border-gray-100 hover:border-gray-200'}`}
+                  >
+                    <Truck size={16} className={`flex-shrink-0 ${deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-400'}`} />
+                    <div className="text-left leading-tight">
+                      <span className={`block text-xs font-bold ${deliveryType === 'delivery' ? 'text-brand-navy' : 'text-gray-500'}`}>Delivery</span>
+                      <span className="block text-[10px] text-gray-400 font-medium">Coordinar</span>
+                    </div>
+                  </button>
+                </div>
               </div>
-              <div className="px-5 py-4 space-y-2.5">
+
+              <div className="h-px bg-gray-100" />
+
+              {/* Resumen + total */}
+              <div className="p-4 space-y-2">
                 {quote ? (
                   <>
-                    <QuoteLine
-                      label={`${quantity.toLocaleString()} unidades × S/ ${formatPrice(quote.unit_price)}`}
-                      value={`S/ ${formatPrice(quote.subtotal)}`}
-                    />
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">{quantity.toLocaleString()} uds × S/ {formatPrice(quote.unit_price)}</span>
+                      <span className="font-semibold text-brand-navy">S/ {formatPrice(quote.subtotal)}</span>
+                    </div>
                     {parseFloat(quote.extras_cost) > 0 && (
-                      <QuoteLine label="Extras seleccionados" value={`+ S/ ${formatPrice(quote.extras_cost)}`} highlight />
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Extras</span>
+                        <span className="font-semibold text-brand-orange">+ S/ {formatPrice(quote.extras_cost)}</span>
+                      </div>
                     )}
-                    {/* ── NUEVO: mostrar si tiene personalización ── */}
                     {customization.hasCustomization && (
-                      <div className="flex items-center gap-2 py-1">
-                        <Sparkles size={12} className="text-brand-orange flex-shrink-0" />
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles size={11} className="text-brand-orange flex-shrink-0" />
                         <span className="text-xs text-brand-orange font-semibold">Personalización con logo incluida</span>
                       </div>
                     )}
-                    <div className="border-t border-gray-100 pt-3 mt-1">
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className="text-xs text-gray-400 mb-0.5">Total estimado (sin IGV)</p>
-                          <p className="text-3xl font-bold text-brand-navy leading-none">
-                            S/ <span className="text-brand-orange">{formatPrice(quote.total)}</span>
-                          </p>
-                        </div>
-                        {quote.delivery_days && (
-                          <div className="text-right">
-                            <p className="text-xs text-gray-400">Entrega aprox.</p>
-                            <p className="text-sm font-bold text-brand-navy">{quote.delivery_days} días útiles</p>
-                          </div>
-                        )}
+                    <div className="flex items-end justify-between pt-1">
+                      <div>
+                        <p className="text-[11px] text-gray-400 leading-none mb-1">Total estimado · sin IGV</p>
+                        <p className="text-3xl font-bold text-brand-navy leading-none">
+                          S/ <span className="text-brand-orange">{formatPrice(quote.total)}</span>
+                        </p>
                       </div>
+                      {quote.delivery_days && (
+                        <div className="text-right">
+                          <p className="text-[11px] text-gray-400 leading-none mb-1">Entrega</p>
+                          <p className="text-sm font-bold text-brand-navy">{quote.delivery_days} días</p>
+                        </div>
+                      )}
                     </div>
-                    {quote.requires_stock_confirmation && (
-                      <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
-                        <AlertCircle size={12} strokeWidth={2.5} />
-                        Precio sujeto a confirmación de stock disponible
-                      </p>
+                    {(isWholesale || quote.requires_stock_confirmation) && (
+                      <div className="flex items-start gap-1.5 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 mt-1">
+                        <Info size={12} className="text-amber-600 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
+                        <p className="text-[11px] text-amber-800 leading-snug">
+                          Precio sujeto a confirmación de stock. Un asesor te contactará.
+                        </p>
+                      </div>
                     )}
                   </>
                 ) : (
-                  <div className="py-4 flex items-center justify-center gap-2 text-gray-400">
-                    <Loader2 size={16} className="animate-spin" />
+                  <div className="py-3 flex items-center justify-center gap-2 text-gray-400">
+                    <Loader2 size={15} className="animate-spin" />
                     <span className="text-sm">Calculando precio...</span>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* ── CTAs ── */}
-            <div className="space-y-3">
-              {!isWholesale ? (
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!quote || quoteLoading}
-                  className={`w-full flex items-center justify-center gap-3 py-4 rounded-2xl
-                             font-bold text-base transition-all duration-300
-                             ${addedToCart
-                               ? 'bg-green-500 text-white scale-[0.98]'
-                               : !quote || quoteLoading
-                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                 : 'bg-brand-navy hover:bg-brand-orange text-white shadow-lg shadow-brand-navy/20 hover:shadow-brand-orange/20 hover:scale-[1.02] active:scale-[0.98]'
-                             }`}
-                >
-                  {addedToCart ? (
-                    <><CheckCircle size={20} /> ¡Agregado al carrito!</>
-                  ) : (
-                    <><ShoppingCart size={20} /> Agregar al carrito</>
-                  )}
-                </button>
-              ) : (
+              {/* CTAs */}
+              <div className="p-4 pt-0 space-y-2.5">
+                {!isWholesale ? (
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!quote || quoteLoading}
+                    className={`w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl
+                               font-bold text-sm transition-all duration-300
+                               ${addedToCart
+                                 ? 'bg-green-500 text-white scale-[0.98]'
+                                 : !quote || quoteLoading
+                                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                   : 'bg-brand-navy hover:bg-brand-orange text-white shadow-lg shadow-brand-navy/20 hover:shadow-brand-orange/20 hover:scale-[1.01] active:scale-[0.98]'}`}
+                  >
+                    {addedToCart
+                      ? <><CheckCircle size={18} /> ¡Agregado al carrito!</>
+                      : <><ShoppingCart size={18} /> Agregar al carrito</>}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleWhatsAppQuote}
+                    className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl
+                               font-bold text-sm bg-[#25D366] hover:bg-[#1ebe5d] text-white
+                               shadow-lg shadow-green-500/20 hover:scale-[1.01] active:scale-[0.98] transition-all duration-300"
+                  >
+                    <MessageCircle size={18} /> Solicitar cotización por WhatsApp
+                  </button>
+                )}
                 <button
                   onClick={handleWhatsAppQuote}
-                  className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl
-                             font-bold text-base bg-[#25D366] hover:bg-[#1ebe5d] text-white
-                             shadow-lg shadow-green-500/20 hover:scale-[1.02] active:scale-[0.98]
-                             transition-all duration-300"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl
+                             font-semibold text-sm border border-gray-200 text-gray-600
+                             hover:border-brand-navy hover:text-brand-navy transition-all duration-200"
                 >
-                  <MessageCircle size={20} />
-                  Solicitar cotización por WhatsApp
+                  <MessageCircle size={15} strokeWidth={2.5} />
+                  {isWholesale ? 'Hablar con un asesor' : 'O cotizar por WhatsApp'}
                 </button>
-              )}
+              </div>
 
-              <button
-                onClick={handleWhatsAppQuote}
-                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl
-                           font-semibold text-sm border-2 border-gray-200 text-gray-600
-                           hover:border-brand-navy hover:text-brand-navy
-                           transition-all duration-200"
-              >
-                <MessageCircle size={16} strokeWidth={2.5} />
-                {isWholesale ? 'Hablar con un asesor' : 'O cotizar por WhatsApp'}
-              </button>
-            </div>
-
-            {/* Garantías */}
-            <div className="grid grid-cols-3 gap-3 pt-1">
-              <TrustBadge icon="🔒" text="Pago seguro" />
-              <TrustBadge icon="🚚" text="Envíos a todo el Perú" />
-              <TrustBadge icon="✅" text="Calidad garantizada" />
+              {/* Garantías — fila inferior compacta */}
+              <div className="flex items-center justify-around border-t border-gray-100 px-4 py-3 bg-gray-50/50">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">🔒 Pago seguro</span>
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">🚚 Envíos Perú</span>
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">✅ Calidad</span>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
 
-      {/* ── NUEVO: Modal del personalizador ── */}
+      {/* ── NUEVO: Lightbox de zoom de imagen ── */}
+      {lightboxOpen && displayImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-5 right-5 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20
+                       flex items-center justify-center text-white transition-all"
+            aria-label="Cerrar"
+          >
+            <X size={22} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={displayImage}
+            alt={product.name}
+            className="max-w-full max-h-[90vh] object-contain rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* ── Modal del personalizador ── */}
       <CustomizerModal
         isOpen={customizerOpen}
         onClose={() => setCustomizerOpen(false)}
@@ -706,7 +714,7 @@ export default function ProductPage() {
   );
 }
 
-// ─── Subcomponentes (sin cambios) ─────────────────────────────────────────────
+// ─── Subcomponentes ───────────────────────────────────────────────────────────
 
 function SpecRow({ label, value }: { label: string; value: string }) {
   return (
@@ -716,23 +724,3 @@ function SpecRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-function QuoteLine({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className={`text-sm font-semibold ${highlight ? 'text-brand-orange' : 'text-brand-navy'}`}>{value}</span>
-    </div>
-  );
-}
-
-function TrustBadge({ icon, text }: { icon: string; text: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1.5 bg-white rounded-xl py-3 px-2 border border-gray-100">
-      <span className="text-lg">{icon}</span>
-      <span className="text-[10px] font-semibold text-gray-500 text-center leading-tight">{text}</span>
-    </div>
-  );
-}
-
-

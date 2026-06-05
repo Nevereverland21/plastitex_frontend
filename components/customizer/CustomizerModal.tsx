@@ -3,9 +3,10 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import {
-  X, Upload, Wand2, Move, ZoomIn, ZoomOut, RotateCcw,
+  X, Upload, Wand2, Move, RotateCcw, RotateCw,
   Trash2, CheckCircle, Loader2, AlertTriangle,
-  ChevronRight, Sparkles, ImageIcon, Maximize2,
+  ChevronRight, Sparkles, ImageIcon, Lock, Unlock,
+  ZoomIn, ZoomOut, Maximize2, MoveHorizontal, MoveVertical,
 } from 'lucide-react';
 import type { CustomizationData, PrintZone } from '@/types/customizer';
 import { useCustomizer, CANVAS_W, CANVAS_H, PRINT_ZONES } from './useCustomizer';
@@ -27,24 +28,23 @@ export default function CustomizerModal({
 
   const {
     setCanvasRef,
-    logoDataUrl, position, setPosition,
+    logoDataUrl, position,
     notes, setNotes,
     activeZone, zoom,
     removingBg, bgRemoved, outOfBounds,
-    handleLogoUpload, handleRemoveBg,
-    handleZoneChange, centerLogo, removeLogo,
+    handleLogoUpload, handleRemoveBg, handleZoneChange,
+    setWidth, setHeight, setRotation, setOpacity, toggleLockRatio,
+    centerLogo, resetTransform, removeLogo,
     handleZoomIn, handleZoomOut, handleZoomReset,
     onPointerDown, onPointerMove, onPointerUp,
     buildResult,
   } = useCustomizer({ productImageUrl, productName, initialData });
 
-  // Bloquear scroll
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Escape para cerrar
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
     window.addEventListener('keydown', h);
@@ -59,7 +59,6 @@ export default function CustomizerModal({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) handleLogoUpload(file);
-    // reset para permitir subir el mismo archivo de nuevo
     e.target.value = '';
   };
 
@@ -74,12 +73,12 @@ export default function CustomizerModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="
-        relative w-full sm:w-auto sm:min-w-[960px] sm:max-w-[1040px]
-        max-h-[100dvh] sm:max-h-[94vh]
+        relative w-full sm:w-auto sm:min-w-[980px] sm:max-w-[1080px]
+        h-[100dvh] sm:h-auto sm:max-h-[94vh]
         bg-[#f5f5f3] rounded-t-3xl sm:rounded-3xl
         flex flex-col overflow-hidden shadow-2xl
         animate-in fade-in slide-in-from-bottom-4 duration-300
@@ -96,11 +95,9 @@ export default function CustomizerModal({
               <p className="text-xs text-gray-400 mt-0.5">{productName}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
+          <button onClick={onClose}
             className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400
-                       hover:bg-gray-100 hover:text-gray-700 transition-all"
-          >
+                       hover:bg-gray-100 hover:text-gray-700 transition-all">
             <X size={18} />
           </button>
         </div>
@@ -109,146 +106,112 @@ export default function CustomizerModal({
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
 
           {/* ══ CANVAS PANEL ══ */}
-          <div className="flex flex-col items-center justify-start bg-white border-r border-gray-100 flex-shrink-0 lg:w-[520px] p-5 gap-4">
+          <div className="flex flex-col bg-white lg:border-r border-gray-100 flex-shrink-0 lg:w-[540px] p-5 gap-3 overflow-hidden">
 
-            {/* Canvas scrolleable con zoom */}
-            {/* El truco: el contenedor tiene overflow:auto y tamaño fijo.
-                El canvas se escala hacia adentro con transform; como el inner div
-                ocupa el tamaño real escalado, el scroll funciona naturalmente. */}
-            <div
-              className="relative w-full rounded-2xl border border-gray-200 overflow-auto"
-              style={{ background: '#f5f5f3', maxHeight: '420px' }}
-            >
-              {/* Inner: ocupa el espacio escalado para activar scroll */}
+            {/* Canvas — se ajusta al alto disponible, sin scroll a 100% */}
+            <div className="relative flex-1 min-h-0 rounded-2xl border border-gray-200 overflow-hidden flex items-center justify-center"
+                 style={{ background: '#f5f5f3' }}>
+              {/* Wrapper que aplica zoom; overflow auto solo activo si zoom>1 */}
               <div
-                style={{
-                  width:  `${CANVAS_W  * zoom}px`,
-                  height: `${CANVAS_H * zoom}px`,
-                  minWidth: '100%',
-                  position: 'relative',
-                }}
+                className="w-full h-full flex items-center justify-center"
+                style={{ overflow: zoom > 1 ? 'auto' : 'hidden' }}
               >
-                <canvas
-                  ref={setCanvasRef}
-                  width={CANVAS_W}
-                  height={CANVAS_H}
+                <div
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width:  `${CANVAS_W  * zoom}px`,
-                    height: `${CANVAS_H * zoom}px`,
-                    cursor: hasLogo ? 'grab' : 'default',
-                    touchAction: 'none',
-                    display: 'block',
+                    width:  `${zoom * 100}%`,
+                    aspectRatio: `${CANVAS_W} / ${CANVAS_H}`,
+                    flexShrink: 0,
+                    maxWidth: zoom > 1 ? 'none' : '100%',
+                    maxHeight: zoom > 1 ? 'none' : '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
-                  onMouseDown={onPointerDown as React.MouseEventHandler<HTMLCanvasElement>}
-                  onMouseMove={onPointerMove as React.MouseEventHandler<HTMLCanvasElement>}
-                  onMouseUp={onPointerUp}
-                  onMouseLeave={onPointerUp}
-                  onTouchStart={onPointerDown as React.TouchEventHandler<HTMLCanvasElement>}
-                  onTouchMove={onPointerMove as React.TouchEventHandler<HTMLCanvasElement>}
-                  onTouchEnd={onPointerUp}
-                />
+                >
+                  <canvas
+                    ref={setCanvasRef}
+                    width={CANVAS_W}
+                    height={CANVAS_H}
+                    className="block"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      cursor: hasLogo ? 'grab' : 'default',
+                      touchAction: 'none',
+                    }}
+                    onMouseDown={onPointerDown as React.MouseEventHandler<HTMLCanvasElement>}
+                    onMouseMove={onPointerMove as React.MouseEventHandler<HTMLCanvasElement>}
+                    onMouseUp={onPointerUp}
+                    onMouseLeave={onPointerUp}
+                    onTouchStart={onPointerDown as React.TouchEventHandler<HTMLCanvasElement>}
+                    onTouchMove={onPointerMove as React.TouchEventHandler<HTMLCanvasElement>}
+                    onTouchEnd={onPointerUp}
+                  />
+                </div>
               </div>
 
-              {/* Hint drag */}
-              {hasLogo && zoom <= 1 && (
+              {/* Hint flotante */}
+              {hasLogo && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2
-                               bg-black/50 text-white text-[10px] px-2.5 py-1 rounded-full
+                               bg-black/55 text-white text-[10px] px-3 py-1.5 rounded-full
                                flex items-center gap-1.5 pointer-events-none whitespace-nowrap">
                   <Move size={10} />
-                  Arrastra para reposicionar · esquina naranja para redimensionar
+                  {zoom > 1 ? 'Desplázate para ver el área completa' : 'Arrastra el logo · usa las esquinas para escalar y rotar'}
                 </div>
               )}
-              {zoom > 1 && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2
-                               bg-black/50 text-white text-[10px] px-2.5 py-1 rounded-full
-                               flex items-center gap-1.5 pointer-events-none whitespace-nowrap">
-                  <Move size={10} />
-                  Desplázate con scroll para ver el área completa
-                </div>
-              )}
+
+              {/* Zoom flotante arriba-derecha */}
+              <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-xl border border-gray-100 shadow-sm p-1">
+                <button onClick={handleZoomOut} disabled={zoom <= 1}
+                  className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-600 disabled:opacity-30 transition-all">
+                  <ZoomOut size={13} />
+                </button>
+                <span className="text-[11px] font-bold text-brand-navy w-9 text-center">{Math.round(zoom * 100)}%</span>
+                <button onClick={handleZoomIn} disabled={zoom >= 2.5}
+                  className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-600 disabled:opacity-30 transition-all">
+                  <ZoomIn size={13} />
+                </button>
+                {zoom !== 1 && (
+                  <button onClick={handleZoomReset}
+                    className="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition-all">
+                    <Maximize2 size={12} />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* ── Controles de zoom ── */}
-            <div className="flex items-center gap-2 w-full">
-              <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400 mr-1">
-                Zoom
-              </span>
-              <button
-                onClick={handleZoomOut}
-                disabled={zoom <= 0.5}
-                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center
-                           text-gray-600 disabled:opacity-40 transition-all"
-              >
-                <ZoomOut size={14} />
-              </button>
-              <span className="text-xs font-bold text-brand-navy w-10 text-center">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                onClick={handleZoomIn}
-                disabled={zoom >= 2}
-                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center
-                           text-gray-600 disabled:opacity-40 transition-all"
-              >
-                <ZoomIn size={14} />
-              </button>
-              <button
-                onClick={handleZoomReset}
-                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center
-                           text-gray-500 transition-all ml-1"
-                title="Restablecer zoom"
-              >
-                <Maximize2 size={13} />
-              </button>
-              <div className="flex-1" />
-              {/* Selector de zona */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Zona</span>
+            {/* Selector de zona */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-[10px] uppercase tracking-wider font-semibold text-gray-400">Zona</span>
+              <div className="flex gap-1.5 flex-1">
                 {(Object.keys(PRINT_ZONES) as PrintZone[]).map((zone) => (
-                  <button
-                    key={zone}
-                    onClick={() => handleZoneChange(zone)}
-                    className={`
-                      px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border
+                  <button key={zone} onClick={() => handleZoneChange(zone)}
+                    className={`flex-1 px-2 py-2 rounded-lg text-xs font-semibold transition-all border
                       ${activeZone === zone
                         ? 'bg-brand-orange text-white border-brand-orange'
-                        : 'bg-white text-gray-500 border-gray-200 hover:border-brand-orange/40 hover:text-brand-orange'}
-                    `}
-                  >
+                        : 'bg-white text-gray-500 border-gray-200 hover:border-brand-orange/40 hover:text-brand-orange'}`}>
                     {PRINT_ZONES[zone].label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── Advertencia de curvatura — siempre visible cuando hay logo ── */}
-            {hasLogo && (
-              <div className={`
-                w-full flex items-start gap-2.5 px-4 py-3 rounded-xl border text-xs leading-relaxed transition-all
-                ${outOfBounds
-                  ? 'bg-amber-50 border-amber-300 text-amber-800'
-                  : 'bg-blue-50 border-blue-100 text-blue-700'}
-              `}>
-                <AlertTriangle size={14} className={`flex-shrink-0 mt-0.5 ${outOfBounds ? 'text-amber-500' : 'text-blue-400'}`} />
+            {/* Aviso */}
+            {hasLogo ? (
+              <div className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-[11px] leading-snug flex-shrink-0 transition-all
+                ${outOfBounds ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-blue-50 border-blue-100 text-blue-700'}`}>
+                <AlertTriangle size={13} className={`flex-shrink-0 mt-0.5 ${outOfBounds ? 'text-amber-500' : 'text-blue-400'}`} />
                 <span>
                   {outOfBounds
-                    ? <><strong>Tu logo está fuera de la zona recomendada.</strong> En el producto físico, la parte que sale de los bordes puede verse curvada o cortada según la técnica de impresión.</>
-                    : <>Este canvas es una <strong>referencia visual de posicionamiento</strong>. Por la curvatura del envase, los bordes del logo pueden verse ligeramente distintos en el producto final.</>
-                  }
+                    ? <><strong>Fuera de la zona recomendada.</strong> La parte que sale puede verse curvada o cortada en el producto físico.</>
+                    : <>Referencia de posicionamiento. Por la curvatura del envase, los bordes pueden verse ligeramente distintos al imprimir.</>}
                 </span>
               </div>
-            )}
-
-            {/* Advertencia sin logo */}
-            {!hasLogo && (
-              <div className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500">
-                <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[9px] font-bold text-gray-500">i</span>
-                </div>
-                Sube tu logo para verlo sobre el producto y ajustar su posición.
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] text-gray-500 flex-shrink-0">
+                <Sparkles size={12} className="text-gray-400" />
+                Sube tu logo para verlo sobre el producto y ajustarlo.
               </div>
             )}
           </div>
@@ -256,44 +219,33 @@ export default function CustomizerModal({
           {/* ══ CONTROLS PANEL ══ */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5 min-w-0">
 
-            {/* ── 1. Subir logo ── */}
+            {/* ── 1. Subir ── */}
             <section>
               <SectionTitle number={1} title="Sube tu logo o arte" />
-
               {!hasLogo ? (
                 <div
                   className="mt-3 border-2 border-dashed border-gray-200 rounded-2xl
-                             hover:border-brand-orange/50 hover:bg-brand-orange/3
-                             transition-all cursor-pointer group"
+                             hover:border-brand-orange/50 hover:bg-brand-orange/3 transition-all cursor-pointer group"
                   onClick={() => fileInputRef.current?.click()}
-                  onDrop={handleDrop}
-                  onDragOver={(e) => e.preventDefault()}
-                >
+                  onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
                   <div className="flex flex-col items-center justify-center py-8 px-4 gap-3">
-                    <div className="w-14 h-14 rounded-2xl bg-brand-orange/8 flex items-center justify-center
-                                   group-hover:bg-brand-orange/15 transition-colors">
+                    <div className="w-14 h-14 rounded-2xl bg-brand-orange/8 flex items-center justify-center group-hover:bg-brand-orange/15 transition-colors">
                       <Upload size={24} className="text-brand-orange" />
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-semibold text-brand-navy">Haz clic o arrastra tu archivo</p>
                       <p className="text-xs text-gray-400 mt-1">PNG, JPG, SVG · Máx 5 MB</p>
-                      <p className="text-xs text-brand-orange font-medium mt-1.5">
-                        ✦ PNG sin fondo recomendado para mejor resultado
-                      </p>
+                      <p className="text-xs text-brand-orange font-medium mt-1.5">✦ PNG sin fondo recomendado</p>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="mt-3 space-y-3">
-                  {/* Preview */}
                   <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-gray-100">
-                    <div className="w-14 h-14 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center"
+                    <div className="w-14 h-14 rounded-xl border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center"
                          style={{ background: 'repeating-conic-gradient(#e5e7eb 0% 25%, white 0% 50%) 0 0 / 10px 10px' }}>
-                      {/* checkerboard bg para ver transparencia */}
-                      {logoDataUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={logoDataUrl} alt="Logo" className="w-full h-full object-contain" />
-                      )}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={logoDataUrl!} alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-brand-navy">Logo cargado</p>
@@ -301,19 +253,16 @@ export default function CustomizerModal({
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => fileInputRef.current?.click()}
-                        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
-                                   text-gray-500 hover:bg-brand-navy hover:text-white transition-all" title="Cambiar">
+                        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-brand-navy hover:text-white transition-all" title="Cambiar">
                         <ImageIcon size={14} />
                       </button>
                       <button onClick={removeLogo}
-                        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center
-                                   text-gray-500 hover:bg-red-500 hover:text-white transition-all" title="Quitar">
+                        className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-red-500 hover:text-white transition-all" title="Quitar">
                         <Trash2 size={14} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Remove BG */}
                   {!bgRemoved ? (
                     <button onClick={handleRemoveBg} disabled={removingBg}
                       className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl
@@ -330,97 +279,90 @@ export default function CustomizerModal({
                       <p className="text-sm font-semibold text-green-700">Fondo eliminado correctamente</p>
                     </div>
                   )}
-                  {!bgRemoved && !removingBg && (
-                    <p className="text-xs text-gray-400 text-center">
-                      Funciona mejor con fondos sólidos (blanco, negro, color plano).
-                    </p>
-                  )}
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </section>
 
-            {/* ── 2. Ajustar posición (solo si hay logo) ── */}
+            {/* ── 2. Transformar ── */}
             {hasLogo && (
               <section>
-                <SectionTitle number={2} title="Ajusta tamaño y posición" />
+                <SectionTitle number={2} title="Ajusta tu logo" />
                 <div className="mt-3 space-y-4 bg-white rounded-2xl border border-gray-100 p-4">
-                  <SliderControl
-                    label="Tamaño del logo"
-                    icon={<ZoomIn size={14} />}
-                    value={position.size}
-                    min={30} max={280} unit="px"
-                    onChange={(v) => setPosition((p) => ({ ...p, size: v }))}
-                  />
-                  <SliderControl
-                    label="Opacidad"
-                    icon={<Move size={14} />}
-                    value={Math.round(position.opacity * 100)}
-                    min={20} max={100} unit="%"
-                    onChange={(v) => setPosition((p) => ({ ...p, opacity: v / 100 }))}
-                  />
-                  <button onClick={centerLogo}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4
-                               rounded-xl bg-gray-50 hover:bg-brand-navy/5 border border-gray-100
-                               hover:border-brand-navy/20 text-sm font-semibold text-gray-600
-                               hover:text-brand-navy transition-all">
-                    <RotateCcw size={14} />
-                    Centrar en la zona seleccionada
+
+                  {/* Lock ratio toggle */}
+                  <button onClick={toggleLockRatio}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-semibold transition-all
+                      ${position.lockRatio
+                        ? 'border-brand-navy/20 bg-brand-navy/5 text-brand-navy'
+                        : 'border-gray-200 bg-white text-gray-500'}`}>
+                    <span className="flex items-center gap-2">
+                      {position.lockRatio ? <Lock size={13} /> : <Unlock size={13} />}
+                      Mantener proporción
+                    </span>
+                    <span className={`w-9 h-5 rounded-full relative transition-all ${position.lockRatio ? 'bg-brand-navy' : 'bg-gray-300'}`}>
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${position.lockRatio ? 'left-[18px]' : 'left-0.5'}`} />
+                    </span>
                   </button>
+
+                  <Slider label="Ancho" icon={<MoveHorizontal size={14} />} value={position.width}
+                    min={24} max={320} unit="px" onChange={setWidth} />
+                  <Slider label="Alto" icon={<MoveVertical size={14} />} value={position.height}
+                    min={24} max={320} unit="px" onChange={setHeight} />
+                  <Slider label="Rotación" icon={<RotateCw size={14} />} value={position.rotation}
+                    min={-180} max={180} unit="°" onChange={setRotation} />
+                  <Slider label="Opacidad" icon={<Move size={14} />} value={Math.round(position.opacity * 100)}
+                    min={20} max={100} unit="%" onChange={(v) => setOpacity(v / 100)} />
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button onClick={centerLogo}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-50 hover:bg-brand-navy/5 border border-gray-100 hover:border-brand-navy/20 text-xs font-semibold text-gray-600 hover:text-brand-navy transition-all">
+                      <Maximize2 size={13} /> Centrar
+                    </button>
+                    <button onClick={resetTransform}
+                      className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-50 hover:bg-brand-navy/5 border border-gray-100 hover:border-brand-navy/20 text-xs font-semibold text-gray-600 hover:text-brand-navy transition-all">
+                      <RotateCcw size={13} /> Restablecer
+                    </button>
+                  </div>
                 </div>
               </section>
             )}
 
             {/* ── 3. Notas ── */}
             <section>
-              <SectionTitle
-                number={hasLogo ? 3 : 2}
-                title="Color, tapa y detalles adicionales"
-                subtitle="Opcional"
-              />
+              <SectionTitle number={hasLogo ? 3 : 2} title="Color, tapa y detalles" subtitle="Opcional" />
               <div className="mt-3">
                 <div className="flex items-start gap-2 mb-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <AlertTriangle size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-800 leading-relaxed">
-                    Describe aquí el <strong>color del envase</strong> y el{' '}
-                    <strong>tipo de tapa</strong> que deseas. Un asesor lo confirmará contigo antes de la producción.
+                    Describe el <strong>color del envase</strong> y el <strong>tipo de tapa</strong>. Un asesor lo confirmará contigo.
                   </p>
                 </div>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value.slice(0, 500))}
-                  placeholder={`Ej: "Quiero el tomatodo en color azul marino con tapa push-pull negra. El logo debe quedar centrado en el frente."`}
+                  placeholder={`Ej: "Tomatodo azul marino con tapa push-pull negra. Logo centrado en el frente."`}
                   rows={4}
-                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white
-                             text-sm text-gray-700 placeholder-gray-400 resize-none
-                             focus:outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15
-                             transition-all leading-relaxed"
-                />
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white text-sm text-gray-700 placeholder-gray-400 resize-none
+                             focus:outline-none focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15 transition-all leading-relaxed" />
                 <p className="text-xs text-gray-400 mt-1.5 text-right">{notes.length}/500</p>
               </div>
             </section>
-
           </div>
         </div>
 
         {/* ── Footer ── */}
         <div className="flex items-center justify-between gap-3 px-6 py-4 bg-white border-t border-gray-100 flex-shrink-0">
           <button onClick={onClose}
-            className="px-5 py-3 rounded-2xl border-2 border-gray-200 text-sm font-semibold
-                       text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all">
+            className="px-5 py-3 rounded-2xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-all">
             Cancelar
           </button>
-          <button
-            onClick={handleSave}
-            disabled={!hasLogo && notes.trim().length === 0}
+          <button onClick={handleSave} disabled={!hasLogo && notes.trim().length === 0}
             className="flex items-center gap-2.5 px-7 py-3 rounded-2xl font-bold text-sm text-white
                        bg-brand-orange hover:bg-brand-navy
                        disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed
-                       transition-all duration-300 shadow-lg shadow-brand-orange/20
-                       hover:shadow-brand-navy/20 hover:scale-[1.02] active:scale-[0.98]">
-            <CheckCircle size={16} />
-            Guardar personalización
-            <ChevronRight size={14} />
+                       transition-all duration-300 shadow-lg shadow-brand-orange/20 hover:shadow-brand-navy/20 hover:scale-[1.02] active:scale-[0.98]">
+            <CheckCircle size={16} /> Guardar personalización <ChevronRight size={14} />
           </button>
         </div>
       </div>
@@ -433,27 +375,21 @@ export default function CustomizerModal({
 function SectionTitle({ number, title, subtitle }: { number: number; title: string; subtitle?: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="w-6 h-6 rounded-full bg-brand-navy text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-        {number}
-      </span>
+      <span className="w-6 h-6 rounded-full bg-brand-navy text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{number}</span>
       <span className="text-sm font-bold text-brand-navy">{title}</span>
-      {subtitle && (
-        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{subtitle}</span>
-      )}
+      {subtitle && <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{subtitle}</span>}
     </div>
   );
 }
 
-function SliderControl({ label, icon, value, min, max, unit, onChange }: {
-  label: string; icon: React.ReactNode;
-  value: number; min: number; max: number; unit: string;
-  onChange: (v: number) => void;
+function Slider({ label, icon, value, min, max, unit, onChange }: {
+  label: string; icon: React.ReactNode; value: number; min: number; max: number; unit: string; onChange: (v: number) => void;
 }) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-600">{icon}{label}</div>
-        <span className="text-xs font-bold text-brand-navy">{value}{unit}</span>
+        <span className="text-xs font-bold text-brand-navy tabular-nums">{value}{unit}</span>
       </div>
       <input type="range" min={min} max={max} value={value} step={1}
         onChange={(e) => onChange(parseInt(e.target.value, 10))}
