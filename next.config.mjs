@@ -1,8 +1,3 @@
-// next.config.mjs
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const webpack = require('next/dist/compiled/webpack/webpack-lib.js');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -22,22 +17,22 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, {  }) => {
     config.experiments = { ...config.experiments, asyncWebAssembly: true };
 
-    if (isServer) {
-      config.externals = [
-        ...(Array.isArray(config.externals) ? config.externals : []),
-        'onnxruntime-web',
-        '@imgly/background-removal',
-      ];
-    } else {
-      config.plugins.push(
-        new webpack.IgnorePlugin({
-          resourceRegExp: /^onnxruntime-web$/,
-        })
-      );
-    }
+    // Decirle a webpack que trate estos paquetes como externos en ambos lados
+    const libs = ['onnxruntime-web', '@imgly/background-removal'];
+
+    config.externals = [
+      ...(Array.isArray(config.externals) ? config.externals : []),
+      ...libs,
+    ];
+
+    // Regla para que webpack no intente parsear estos archivos
+    config.module.rules.push({
+      test: /node_modules\/(onnxruntime-web|@imgly\/background-removal)\/.*/,
+      use: 'null-loader',
+    });
 
     config.resolve.fallback = {
       ...config.resolve.fallback,
