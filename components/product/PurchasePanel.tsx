@@ -38,10 +38,14 @@ export default function PurchasePanel({
   const isRetail    = product.catalog_type === 'retail' || product.catalog_type === 'both';
   const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
 
+  // Solo mostrar personalización si el producto lo permite Y existen
+  // recargos de logo configurados en el admin.
+  const canCustomize = product.allows_logo && surcharges.length > 0;
+
   const [activeTab, setActiveTab]     = useState<PanelTab>('comprar');
   // Si el producto permite logo, inicializamos con la cantidad mínima para
   // desbloquear la personalización, evitando que el tab aparezca bloqueado.
-  const initialQuantity = product.allows_logo
+  const initialQuantity = canCustomize
     ? Math.max(minUnits, product.min_units_for_logo ?? minUnits)
     : minUnits;
   const [quantity, setQuantity]       = useState(initialQuantity);
@@ -156,7 +160,7 @@ export default function PurchasePanel({
               <Building2 size={9} strokeWidth={2.5} /> Mayorista
             </span>
           )}
-          {product.allows_logo && (
+          {canCustomize && (
             <span className="bg-brand-orange/10 text-brand-orange border border-brand-orange/20 text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
               <Sparkles size={9} /> Personalizable
             </span>
@@ -182,7 +186,7 @@ export default function PurchasePanel({
       </div>
 
       {/* ── Tabs — solo si tiene personalización ── */}
-      {product.allows_logo ? (
+      {canCustomize ? (
         <div className="flex mt-3 mb-0 bg-gray-100/70 rounded-xl p-1 gap-1">
           {([
             { id: 'comprar',      label: 'Comprar' },
@@ -218,7 +222,7 @@ export default function PurchasePanel({
             onQuantityChange={setQuantity}
           />
         )}
-        {activeTab === 'personalizar' && product.allows_logo && (
+        {activeTab === 'personalizar' && canCustomize && (
           <CustomizerTab
             surcharges={surcharges}
             active={activeSurcharge}

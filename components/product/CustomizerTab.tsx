@@ -1,6 +1,6 @@
 'use client';
 
-import { Lock, Sparkles, ChevronRight, CheckCircle } from 'lucide-react';
+import { Lock, Sparkles, ChevronRight, CheckCircle, Info } from 'lucide-react';
 import type { LogoSurcharge } from '@/types';
 
 interface CustomizerTabProps {
@@ -196,37 +196,46 @@ export default function CustomizerTab({
         </div>
       )}
 
-      {/* Botón customizer canvas */}
-      <button
-        onClick={onOpenCustomizer}
-        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl
-          border-2 transition-all duration-200 group
-          ${hasCustomization
-            ? 'border-brand-navy bg-brand-navy/3'
-            : 'border-dashed border-brand-orange/40 hover:border-brand-orange hover:bg-brand-orange/3'
-          }`}
-      >
-        <div className="flex items-center gap-2.5">
-          {hasCustomization
-            ? <CheckCircle size={16} className="text-brand-navy flex-shrink-0" />
-            : <Sparkles size={16} className="text-brand-orange flex-shrink-0" />
-          }
-          <div className="text-left">
-            <p className={`text-sm font-bold
-              ${hasCustomization ? 'text-brand-navy' : 'text-brand-orange'}`}>
-              {hasCustomization ? 'Logo guardado' : 'Posicionar logo en el producto'}
-            </p>
-            <p className="text-[10px] text-gray-400 mt-0.5">
-              {hasCustomization ? 'Haz clic para editar el diseño' : 'Arrastra, escala y rota tu logo'}
-            </p>
+      {/* Editor de logo — solo si eligió una técnica */}
+      {active ? (
+        <button
+          onClick={onOpenCustomizer}
+          className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl
+            border-2 transition-all duration-200 group
+            ${hasCustomization
+              ? 'border-brand-navy bg-brand-navy/3'
+              : 'border-dashed border-brand-orange/40 hover:border-brand-orange hover:bg-brand-orange/3'
+            }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {hasCustomization
+              ? <CheckCircle size={16} className="text-brand-navy flex-shrink-0" />
+              : <Sparkles size={16} className="text-brand-orange flex-shrink-0" />
+            }
+            <div className="text-left">
+              <p className={`text-sm font-bold
+                ${hasCustomization ? 'text-brand-navy' : 'text-brand-orange'}`}>
+                {hasCustomization ? 'Logo guardado' : 'Posicionar logo en el producto'}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-0.5">
+                {hasCustomization ? 'Haz clic para editar el diseño' : 'Arrastra, escala y rota tu logo'}
+              </p>
+            </div>
           </div>
+          <ChevronRight
+            size={15}
+            className={`group-hover:translate-x-0.5 transition-transform flex-shrink-0
+              ${hasCustomization ? 'text-brand-navy' : 'text-brand-orange'}`}
+          />
+        </button>
+      ) : (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-200">
+          <Info size={14} className="text-gray-400 flex-shrink-0 mt-0.5" />
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Selecciona una <strong className="text-brand-navy">técnica de impresión</strong> arriba para abrir el editor de logo.
+          </p>
         </div>
-        <ChevronRight
-          size={15}
-          className={`group-hover:translate-x-0.5 transition-transform flex-shrink-0
-            ${hasCustomization ? 'text-brand-navy' : 'text-brand-orange'}`}
-        />
-      </button>
+      )}
     </div>
   );
 }
