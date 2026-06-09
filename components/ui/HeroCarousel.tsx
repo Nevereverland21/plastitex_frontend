@@ -37,7 +37,8 @@ type HeroSlide = {
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const WHATSAPP_URL = 'https://wa.me/51999999999';
+import { WHATSAPP } from '@/lib/config';
+const WHATSAPP_URL = WHATSAPP.baseUrl;
 
 const SLIDES: HeroSlide[] = [
   {

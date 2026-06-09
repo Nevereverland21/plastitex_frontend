@@ -1,213 +1,208 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useCallback } from 'react';
-import { Package, Star, AlertCircle, ChevronRight } from 'lucide-react';
-import type { Product, PricingTier } from '@/types';
+import { ShoppingBag, Building2, Package, Sparkles, ArrowRight, Users } from 'lucide-react';
+import type { Product, ProductColor } from '@/types';
+import { formatPrice, formatQuantity } from '@/lib/formatters';
 
-interface Props {
+interface ProductCardProps {
   product: Product;
 }
 
-// ─── Helper: obtener tier activo para una cantidad ────────────────────────────
-function getActiveTier(tiers: PricingTier[], qty: number): PricingTier | null {
-  const eligible = tiers.filter((t) => t.min_quantity <= qty);
-  if (eligible.length === 0) return null;
-  return eligible.reduce((a, b) => (a.min_quantity > b.min_quantity ? a : b));
-}
+export default function ProductCard({ product }: ProductCardProps) {
+  const defaultColor =
+    product.colors?.find((c) => c.is_default) ?? product.colors?.[0] ?? null;
+  const [activeColor, setActiveColor] = useState<ProductColor | null>(defaultColor);
+  const [activeTierIndex, setActiveTierIndex] = useState<number | null>(null);
 
-// ─── Helper: formatear cantidad para el tab ───────────────────────────────────
-function formatQty(qty: number): string {
-  if (qty >= 1000) return `${qty / 1000}k`;
-  return String(qty);
-}
+  const displayImage = activeColor?.image ?? product.image;
 
-export default function ProductCard({ product }: Props) {
-  const isOutOfStock = product.stock === 0;
-  const isLowStock = product.stock > 0 && product.stock <= 5;
+  const isRetail = product.catalog_type === 'retail' || product.catalog_type === 'both';
+  const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
   const hasTiers = product.pricing_tiers && product.pricing_tiers.length > 0;
 
-  // Cantidad seleccionada — iniciar con el primer tier
-  const [selectedQty, setSelectedQty] = useState<number>(
-    hasTiers ? product.pricing_tiers[0].min_quantity : 100
-  );
+  const activeTier =
+    activeTierIndex !== null ? product.pricing_tiers?.[activeTierIndex] : null;
 
-  // Precio activo según cantidad seleccionada
-  const activeTier = hasTiers ? getActiveTier(product.pricing_tiers, selectedQty) : null;
-  const displayPrice = activeTier
-    ? parseFloat(activeTier.unit_price).toFixed(2)
-    : parseFloat(product.starting_price ?? product.base_price).toFixed(2);
+  const displayedPrice = activeTier
+    ? parseFloat(String(activeTier.unit_price))
+    : parseFloat(String(product.starting_price));
 
-  // Tabs a mostrar — máximo 4 para no romper el layout
-  const tierTabs = hasTiers ? product.pricing_tiers.slice(0, 4) : [];
-
-  const handleTabClick = useCallback(
-    (e: React.MouseEvent, qty: number) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setSelectedQty(qty);
-    },
-    []
-  );
+  const priceLabel = activeTier
+    ? `${formatQuantity(activeTier.min_quantity)}+ uds`
+    : 'Desde';
 
   return (
-    <Link href={`/${product.slug}`} className="block group">
-      <article
-        className="relative bg-white rounded-2xl overflow-hidden border border-gray-100
-                   shadow-sm hover:shadow-xl transition-all duration-300
-                   hover:-translate-y-1 hover:border-brand-orange/30
-                   flex flex-col h-full"
+    <div
+      className="group relative bg-white rounded-2xl border border-gray-100 flex flex-col overflow-hidden
+                 hover:shadow-[0_8px_30px_rgba(27,43,94,0.12)] hover:border-brand-navy/15
+                 transition-all duration-300"
+      onMouseLeave={() => setActiveTierIndex(null)}
+    >
+      {/* ── Zona imagen ─────────────────────────────────────────── */}
+      <Link
+        href={`/${product.slug}`}
+        className="relative aspect-square bg-gradient-to-br from-gray-50 to-slate-50/60 overflow-hidden block"
       >
-        {/* ═══════════════ IMAGEN ═══════════════ */}
-        <div className="relative aspect-square bg-gray-50 overflow-hidden flex-shrink-0">
-
-          {/* Badge Destacado */}
-          {product.featured && !isOutOfStock && (
-            <div className="absolute top-3 right-3 z-10">
-              <span className="inline-flex items-center gap-1 bg-brand-orange text-white
-                               text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                <Star size={11} strokeWidth={2.5} fill="currentColor" />
-                Destacado
+        {/* Badges top-left */}
+        <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5 items-start">
+          {product.featured && (
+            <span className="bg-brand-orange text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+              ★ Destacado
+            </span>
+          )}
+          <div className="flex gap-1 flex-wrap">
+            {isRetail && (
+              <span className="bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                <ShoppingBag size={9} strokeWidth={2.5} />
+                Minorista
               </span>
-            </div>
-          )}
-
-          {/* Categoría */}
-          {product.category_name && (
-            <div className="absolute top-3 left-3 z-10">
-              <span className="inline-block bg-white/95 backdrop-blur-sm text-brand-navy
-                               text-[11px] font-semibold px-2.5 py-1 rounded-full
-                               border border-gray-200 shadow-sm">
-                {product.category_name}
-              </span>
-            </div>
-          )}
-
-          {/* Imagen */}
-          {product.image ? (
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              className={`object-cover transition-all duration-500 group-hover:scale-105
-                          ${isOutOfStock ? 'opacity-50 grayscale' : ''}`}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center
-                            bg-gradient-to-br from-gray-100 to-gray-200">
-              <Package size={48} strokeWidth={1.2} className="text-gray-300" />
-            </div>
-          )}
-
-          {/* Agotado */}
-          {isOutOfStock && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10">
-              <span className="bg-brand-navy/92 backdrop-blur-sm text-white text-[11px]
-                               font-bold px-3.5 py-1.5 rounded-full uppercase
-                               tracking-wider shadow-md">
-                Agotado
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* ═══════════════ CONTENIDO ═══════════════ */}
-        <div className="p-4 flex flex-col gap-2.5 flex-1">
-
-          {/* Nombre */}
-          <h3 className="text-sm font-bold text-brand-navy leading-snug line-clamp-2
-                         group-hover:text-brand-orange transition-colors duration-200">
-            {product.name}
-          </h3>
-
-          {/* Stock bajo */}
-          {isLowStock && (
-            <div className="flex items-center gap-1">
-              <AlertCircle size={12} strokeWidth={2.5} className="text-amber-500" />
-              <span className="text-xs font-semibold text-amber-600">
-                Últimas {product.stock} unidades
-              </span>
-            </div>
-          )}
-
-          {/* ── Tabs de cantidad ── */}
-          {hasTiers && !isOutOfStock && (
-            <div className="flex gap-1 flex-wrap">
-              {tierTabs.map((tier) => {
-                const isActive = activeTier?.min_quantity === tier.min_quantity;
-                return (
-                  <button
-                    key={tier.min_quantity}
-                    onClick={(e) => handleTabClick(e, tier.min_quantity)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold
-                               transition-all duration-150 border
-                               ${isActive
-                                 ? 'bg-brand-navy text-white border-brand-navy shadow-sm'
-                                 : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-brand-navy/40 hover:text-brand-navy'
-                               }`}
-                  >
-                    {formatQty(tier.min_quantity)}+
-                  </button>
-                );
-              })}
-              {product.pricing_tiers.length > 4 && (
-                <span className="px-2 py-1 text-[11px] text-gray-400 font-medium self-center">
-                  +{product.pricing_tiers.length - 4} más
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Separador */}
-          <div className="h-px bg-gray-100 mt-auto" />
-
-          {/* ── Precio + CTA ── */}
-          <div className="flex items-end justify-between gap-2">
-
-            {/* Precio dinámico */}
-            <div className="flex-shrink-0">
-              <p className="text-[10px] uppercase tracking-wider text-gray-400
-                             font-semibold leading-none mb-1">
-                {hasTiers && activeTier
-                  ? `${activeTier.min_quantity.toLocaleString()}+ uds`
-                  : 'desde'
-                }
-              </p>
-              <div className="flex items-baseline gap-1">
-                <p className={`text-xl font-bold leading-none whitespace-nowrap
-                                transition-all duration-200
-                                ${isOutOfStock ? 'text-gray-400 line-through' : 'text-brand-navy'}`}>
-                  S/ {displayPrice}
-                </p>
-                <span className="text-xs text-gray-400 font-normal">c/u</span>
-              </div>
-              {activeTier?.delivery_days && (
-                <p className="text-[10px] text-gray-400 mt-0.5 leading-none">
-                  🕐 {activeTier.delivery_days} días útiles
-                </p>
-              )}
-            </div>
-
-            {/* Botón */}
-            {isOutOfStock ? (
-              <span className="inline-flex items-center text-xs font-bold px-3 py-2
-                               rounded-xl bg-gray-100 text-gray-400 flex-shrink-0">
-                Agotado
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-xs font-bold
-                               px-3 py-2 rounded-xl flex-shrink-0
-                               bg-brand-navy group-hover:bg-brand-orange text-white
-                               transition-colors duration-200 shadow-sm whitespace-nowrap">
-                Cotizar
-                <ChevronRight size={13} strokeWidth={2.5} />
+            )}
+            {isWholesale && (
+              <span className="bg-brand-navy text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                <Building2 size={9} strokeWidth={2.5} />
+                Mayorista
               </span>
             )}
           </div>
         </div>
-      </article>
-    </Link>
+
+        {/* Badge personalizable top-right */}
+        {product.allows_logo && (
+          <div className="absolute top-3 right-3 z-10">
+            <span className="bg-white/90 backdrop-blur-sm text-brand-orange border border-brand-orange/20 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+              <Sparkles size={9} strokeWidth={2.5} />
+              Logo
+            </span>
+          </div>
+        )}
+
+        {/* Imagen */}
+        {displayImage ? (
+          <Image
+            src={displayImage}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            className="object-contain p-6 transition-all duration-500 group-hover:scale-[1.08]"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-200">
+            <Package size={52} strokeWidth={1} />
+          </div>
+        )}
+
+        {/* Overlay CTA en hover */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-14 flex items-center justify-center
+                      bg-gradient-to-t from-brand-navy/80 to-transparent
+                      transition-all duration-300 opacity-0 translate-y-2
+                      group-hover:opacity-100 group-hover:translate-y-0"
+        >
+          <span className="text-white text-xs font-bold flex items-center gap-1.5 tracking-wide">
+            {isWholesale && !isRetail ? 'Ver precios' : 'Ver producto'}
+            <ArrowRight size={13} strokeWidth={2.5} />
+          </span>
+        </div>
+      </Link>
+
+      {/* ── Zona info ────────────────────────────────────────────── */}
+      <div className="p-4 flex flex-col flex-1 gap-0">
+
+        {/* Categoría + nombre */}
+        <div className="mb-2.5">
+          <p className="text-[10px] text-brand-orange font-bold uppercase tracking-[0.15em] mb-1">
+            {product.category_name}
+          </p>
+          <Link href={`/${product.slug}`}>
+            <h3 className="text-sm font-bold text-brand-navy leading-snug line-clamp-2
+                           group-hover:text-brand-orange transition-colors duration-200">
+              {product.name}
+            </h3>
+          </Link>
+        </div>
+
+        {/* Zona tiers / mínimo — altura fija para alinear todas las cards */}
+        <div className="h-[38px] flex items-start">
+          {hasTiers ? (
+            <div className="flex flex-wrap gap-1">
+              {product.pricing_tiers!.map((tier, i) => (
+                <button
+                  key={i}
+                  onMouseEnter={() => setActiveTierIndex(i)}
+                  onMouseLeave={() => setActiveTierIndex(null)}
+                  onClick={(e) => e.preventDefault()}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-all duration-150
+                              ${activeTierIndex === i
+                                ? 'bg-brand-navy text-white border-brand-navy shadow-sm scale-105'
+                                : 'bg-brand-navy/5 text-brand-navy/70 border-brand-navy/15 hover:bg-brand-navy/10'
+                              }`}
+                >
+                  {formatQuantity(tier.min_quantity)}+ → S/{formatPrice(parseFloat(String(tier.unit_price)))}
+                </button>
+              ))}
+            </div>
+          ) : product.min_units > 1 ? (
+            <div className="flex items-center gap-1 text-amber-600 bg-amber-50 rounded-lg px-2 py-1 w-fit">
+              <Users size={10} strokeWidth={2.5} />
+              <span className="text-[10px] font-bold">Mín. {product.min_units} uds</span>
+            </div>
+          ) : null}
+        </div>
+
+        {/* Colores + precio */}
+        <div className="mt-auto pt-2.5 border-t border-gray-50 flex items-end justify-between gap-2">
+
+          {/* Selector de colores */}
+          <div className="flex-1 min-w-0">
+            {product.colors && product.colors.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 items-center">
+                {product.colors.slice(0, 5).map((color) => (
+                  <button
+                    key={color.id}
+                    onMouseEnter={() => setActiveColor(color)}
+                    onClick={(e) => { e.preventDefault(); setActiveColor(color); }}
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-150
+                                ${activeColor?.id === color.id
+                                  ? 'border-brand-navy scale-125 shadow-sm'
+                                  : 'border-white shadow hover:scale-110'
+                                }`}
+                    style={{ backgroundColor: color.hex_code }}
+                    title={color.name}
+                  />
+                ))}
+                {product.colors.length > 5 && (
+                  <span className="text-[10px] text-gray-400 font-semibold">
+                    +{product.colors.length - 5}
+                  </span>
+                )}
+                {activeColor && (
+                  <span className="text-[10px] text-gray-500 font-medium ml-0.5 truncate">
+                    {activeColor.name}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-[10px] text-gray-300 font-medium">Color único</span>
+            )}
+          </div>
+
+          {/* Precio dinámico */}
+          <div className="text-right shrink-0">
+            <p className="text-[10px] text-gray-400 font-semibold mb-0.5 transition-all duration-150">
+              {priceLabel}
+            </p>
+            <p
+              className={`text-lg font-black leading-none transition-all duration-150
+                          ${activeTierIndex !== null ? 'text-brand-orange' : 'text-brand-navy'}`}
+            >
+              S/ {formatPrice(displayedPrice)}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

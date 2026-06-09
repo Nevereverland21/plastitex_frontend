@@ -8,6 +8,7 @@ const VALID_TAGS = new Set([
   'products',
   'products-featured',
   'categories',
+  'logo-surcharges',
 ]);
 
 // Prefijos válidos para tags dinámicos (ej. "product:tomatodo-tornado")

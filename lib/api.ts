@@ -5,9 +5,15 @@ import type {
   ProductDetail,
   QuoteResponse,
   CreateOrderPayload,
+  CreateQuotePayload,
   Order,
+  PublicOrder,
   CreateComplaintPayload,
   CreateJobApplicationPayload,
+  LogoSurcharge,
+  StoreLocation,
+  PaymentLink,
+  CatalogType,
 } from '@/types';
 
 // ─── Tipos de respuesta ───────────────────────────────────────────────────────
@@ -20,11 +26,13 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ProductFilters {
+  catalog_type?: CatalogType;
   category?: string;
   featured?: boolean;
   min_price?: number;
   max_price?: number;
   in_stock?: boolean;
+  allows_logo?: boolean;
   search?: string;
   ordering?: 'base_price' | '-base_price' | 'name' | '-name' | 'created_at' | '-created_at';
   page?: number;
@@ -39,7 +47,7 @@ export interface QuoteParams {
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
-function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
+export function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
   if (Array.isArray(data)) return data;
   if (data && typeof data === 'object' && 'results' in data && Array.isArray(data.results)) {
     return data.results;
@@ -80,10 +88,6 @@ export async function getProductBySlug(slug: string): Promise<ProductDetail> {
   return data;
 }
 
-/**
- * Cotizador en tiempo real.
- * Llama a GET /api/products/{slug}/quote/?quantity=500&extra_ids=1,2
- */
 export async function getProductQuote(
   slug: string,
   params: QuoteParams
@@ -100,23 +104,38 @@ export async function getProductQuote(
   return data;
 }
 
+export async function getLogoSurcharges(): Promise<LogoSurcharge[]> {
+  const { data } = await api.get('/api/logo-surcharges/');
+  return unwrapList<LogoSurcharge>(data);
+}
+
+export async function getStoreLocations(): Promise<StoreLocation[]> {
+  const { data } = await api.get('/api/store-locations/');
+  return unwrapList<StoreLocation>(data);
+}
+
+export async function getPaymentLink(token: string): Promise<PaymentLink> {
+  const { data } = await api.get(`/api/payment-links/${token}/`);
+  return data;
+}
+
 export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   const { data } = await api.post('/api/orders/', payload);
   return data;
 }
 
-/**
- * Estado del pedido (semáforo).
- * Llama a GET /api/orders/{id}/
- */
 export async function getOrderStatus(orderId: number): Promise<Order> {
   const { data } = await api.get(`/api/orders/${orderId}/`);
   return data;
 }
 
-/**
- * Enviar reclamo desde el footer.
- */
+export async function createQuote(
+  payload: CreateQuotePayload
+): Promise<{ message: string }> {
+  const { data } = await api.post('/api/quotes/', payload);
+  return data;
+}
+
 export async function createComplaint(
   payload: CreateComplaintPayload
 ): Promise<{ message: string }> {
@@ -124,10 +143,6 @@ export async function createComplaint(
   return data;
 }
 
-/**
- * Enviar postulación desde "Trabaja con nosotros".
- * Usa FormData para soportar subida de CV en PDF.
- */
 export async function createJobApplication(
   payload: CreateJobApplicationPayload,
   cvFile?: File
@@ -196,20 +211,60 @@ export async function getCategoriesServer(): Promise<Category[]> {
   return unwrapList<Category>(data);
 }
 
-/**
- * Detalle de producto server-side.
- * Usado en /productos/[slug] para SSR + ISR.
- */
-export async function getProductDetailServer(slug: string): Promise<ProductDetail> {
+export async function getProductDetailServer(slug: string): Promise<ProductDetail | null> {
   const res = await fetch(
     `${BASE_URL}/api/products/${slug}/`,
     cacheOptions(['products', `product:${slug}`]),
   );
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
 
-// Alias para compatibilidad con código existente
-export async function getProductBySlugServer(slug: string): Promise<ProductDetail> {
+export async function getProductBySlugServer(slug: string): Promise<ProductDetail | null> {
   return getProductDetailServer(slug);
+}
+
+export async function getOrderByToken(token: string): Promise<PublicOrder | null> {
+  try {
+    const { data } = await api.get(`/api/orders/public/${token}/`);
+    return data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getOrderByTokenServer(token: string): Promise<PublicOrder | null> {
+  const res = await fetch(
+    `${BASE_URL}/api/orders/public/${token}/`,
+    { cache: 'no-store' },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
+}
+
+export async function getPaymentLinkByToken(token: string): Promise<PaymentLink | null> {
+  try {
+    const { data } = await api.get(`/payment-links/${token}/`);
+    return data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response?.status === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getPaymentLinkByTokenServer(token: string): Promise<PaymentLink | null> {
+  const res = await fetch(
+    `${BASE_URL}/api/payment-links/${token}/`,
+    { cache: 'no-store' },
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`API error ${res.status}`);
+  return res.json();
 }

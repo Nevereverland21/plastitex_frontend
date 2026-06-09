@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { Search, X } from 'lucide-react';
-import type { Product, Category } from '@/types';
+import type { Product, Category, CatalogType } from '@/types';
 import type { PaginatedResponse } from '@/lib/api';
 import ProductCard from '@/components/ui/ProductCard';
 import FiltersSidebar from '@/components/catalog/FiltersSidebar';
 import FiltersDrawer from '@/components/catalog/FiltersDrawer';
 import CatalogToolbar from '@/components/catalog/CatalogToolbar';
+import CatalogToggle from '@/components/catalog/CatalogToggle';
 import ActiveFilters from '@/components/catalog/ActiveFilters';
 import Pagination from '@/components/catalog/Pagination';
 import EmptyResults from '@/components/catalog/EmptyResults';
@@ -19,35 +20,27 @@ interface Props {
   initialData: PaginatedResponse<Product> | null;
   categories: Category[];
   priceRange: { min: number; max: number };
+  catalogType: CatalogType | 'all';
 }
 
 export default function CatalogoContent({
   initialData,
   categories,
   priceRange,
+  catalogType,
 }: Props) {
   const { filters, setFilter, hasActiveFilters, selectedCategories } =
     useCatalogFilters();
 
-  // useTransition marca el componente como "pendiente" cuando navegamos —
-  // sirve para mostrar skeleton mientras llega la nueva data del server.
   const [isPending, startTransition] = useTransition();
-
-  // Estado del drawer mobile
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  // Estado local del input de búsqueda (debounced antes de aplicar)
   const [searchInput, setSearchInput] = useState(filters.search ?? '');
-
-  // Ref para scroll suave al cambiar de página
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // Sincronizar input cuando cambia el filtro desde fuera (ej. limpiar)
   useEffect(() => {
     setSearchInput(filters.search ?? '');
   }, [filters.search]);
 
-  // Debounce del input de búsqueda → URL
   useEffect(() => {
     if (searchInput === (filters.search ?? '')) return;
     const timer = setTimeout(() => {
@@ -59,17 +52,10 @@ export default function CatalogoContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  // ─── Refrescar la data del server cuando cambian los filtros ──────────────
-  // Como filters depende de la URL, y la URL cambia con router.push, Next.js
-  // automáticamente re-ejecuta el server component padre. No necesitamos
-  // refetch manual — solo asegurarnos de que el initialData se actualice.
-
-  // ─── Métricas de paginación ───────────────────────────────────────────────
   const products = initialData?.results ?? [];
   const totalCount = initialData?.count ?? 0;
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // Cuántos filtros activos (para badge del botón mobile)
   const activeFiltersCount =
     selectedCategories.length +
     (filters.search ? 1 : 0) +
@@ -79,15 +65,23 @@ export default function CatalogoContent({
   return (
     <div className="bg-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+
         {/* ═══════════════ HEADER ═══════════════ */}
         <header className="mb-6">
           <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-2">
             Catálogo
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-brand-navy tracking-tight">
-            Todos los productos
+            {catalogType === 'retail'
+              ? 'Productos Minoristas'
+              : catalogType === 'wholesale'
+              ? 'Productos Mayoristas'
+              : 'Todos los productos'}
           </h1>
         </header>
+
+        {/* ═══════════════ TOGGLE MINORISTA / MAYORISTA ═══════════════ */}
+        <CatalogToggle />
 
         {/* ═══════════════ BUSCADOR ═══════════════ */}
         <div className="mb-6 max-w-2xl">
@@ -114,7 +108,8 @@ export default function CatalogoContent({
               <button
                 onClick={() => setSearchInput('')}
                 aria-label="Limpiar búsqueda"
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-navy transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400
+                           hover:text-brand-navy transition-colors"
               >
                 <X size={16} strokeWidth={2.5} />
               </button>
@@ -124,6 +119,7 @@ export default function CatalogoContent({
 
         {/* ═══════════════ LAYOUT: sidebar + grid ═══════════════ */}
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 lg:gap-10">
+
           {/* ─── Sidebar desktop (sticky) ─── */}
           <div className="hidden lg:block">
             <div className="sticky top-32">
@@ -146,9 +142,8 @@ export default function CatalogoContent({
             <ActiveFilters categories={categories} />
 
             <div ref={gridRef} className="min-h-[400px]">
-              {/* ─── Estados ─── */}
               {isPending && initialData === null ? (
-                <ProductGridSkeleton count={6} />
+                <ProductGridSkeleton count={8} />
               ) : products.length === 0 ? (
                 <EmptyResults
                   searchQuery={filters.search}
@@ -156,7 +151,6 @@ export default function CatalogoContent({
                 />
               ) : (
                 <>
-                  {/* Grid de productos */}
                   <div
                     className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5
                                 ${isPending ? 'opacity-50 pointer-events-none' : ''}
@@ -189,7 +183,6 @@ export default function CatalogoContent({
         </div>
       </div>
 
-      {/* ─── Drawer mobile de filtros ─── */}
       <FiltersDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -200,7 +193,7 @@ export default function CatalogoContent({
   );
 }
 
-// ─── Skeleton del grid ───────────────────────────────────────────────────────
+// ─── Skeleton actualizado ──────────────────────────────────────────────────────
 function ProductGridSkeleton({ count }: { count: number }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
@@ -209,14 +202,38 @@ function ProductGridSkeleton({ count }: { count: number }) {
           key={i}
           className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse"
         >
-          <div className="aspect-square bg-gradient-to-br from-gray-200 to-gray-100 relative overflow-hidden">
-            <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite]
-                            bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+          {/* Imagen */}
+          <div className="aspect-square bg-gradient-to-br from-gray-100 to-gray-50 relative overflow-hidden">
+            <div
+              className="absolute inset-0 -translate-x-full animate-[shimmer_1.8s_infinite]
+                          bg-gradient-to-r from-transparent via-white/50 to-transparent"
+            />
           </div>
+          {/* Contenido */}
           <div className="p-4 space-y-3">
-            <div className="h-4 bg-gray-200 rounded-full w-3/4" />
-            <div className="h-3 bg-gray-100 rounded-full w-full" />
-            <div className="h-9 bg-gray-200 rounded-xl w-full mt-2" />
+            {/* Categoría */}
+            <div className="h-2.5 bg-orange-100 rounded-full w-1/3" />
+            {/* Nombre */}
+            <div className="h-4 bg-gray-200 rounded-full w-4/5" />
+            <div className="h-4 bg-gray-100 rounded-full w-3/5" />
+            {/* Tiers — 3 chips */}
+            <div className="flex gap-1.5 mt-1">
+              {[1, 2, 3].map((j) => (
+                <div key={j} className="h-5 w-16 bg-gray-100 rounded-full" />
+              ))}
+            </div>
+            {/* Footer: colores + precio */}
+            <div className="flex items-end justify-between pt-2 border-t border-gray-50">
+              <div className="flex gap-1.5">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="w-4 h-4 rounded-full bg-gray-200" />
+                ))}
+              </div>
+              <div className="text-right space-y-1">
+                <div className="h-2 bg-gray-100 rounded-full w-8 ml-auto" />
+                <div className="h-5 bg-gray-200 rounded-full w-14" />
+              </div>
+            </div>
           </div>
         </div>
       ))}

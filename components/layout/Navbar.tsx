@@ -6,9 +6,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import {
   ShoppingCart, Menu, X, Search, Phone, Mail,
   ChevronDown, Truck, Clock, Users, Briefcase,
-  FileText, Info,
+  FileText, Info, PackageSearch,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { COMPANY } from '@/lib/config';
 import { useState, useEffect, useRef } from 'react';
 
 const CATEGORIES = [
@@ -25,6 +26,7 @@ const NOSOTROS_LINKS = [
   { name: 'Misión y Visión',      href: '/nosotros#mision',         icon: Users },
   { name: 'Trabaja con nosotros', href: '/trabaja-con-nosotros',    icon: Briefcase },
   { name: 'Libro de reclamos',    href: '/reclamos',                icon: FileText },
+  { name: 'Seguimiento de pedidos', href: '/seguimiento',           icon: PackageSearch },
 ];
 
 const SEARCH_PLACEHOLDERS = [
@@ -100,15 +102,15 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-8">
             <div className="flex items-center gap-6">
-              <a href="tel:+51959388698"
+              <a href={`tel:+51${COMPANY.phone}`}
                 className="flex items-center gap-1.5 hover:text-white transition-colors">
                 <Phone size={12} strokeWidth={2.5} />
-                <span>51 999999999</span>
+                <span>+51 {COMPANY.phoneDisplay}</span>
               </a>
-              <a href="mailto:ventascorporativas@plastitex.pe"
+              <a href={`mailto:${COMPANY.email}`}
                 className="flex items-center gap-1.5 hover:text-white transition-colors">
                 <Mail size={12} strokeWidth={2.5} />
-                <span>correo@correo.com</span>
+                <span>{COMPANY.email}</span>
               </a>
             </div>
             <div className="flex items-center gap-5">
@@ -330,15 +332,15 @@ export default function Navbar() {
 
         {/* Footer drawer */}
         <div className="border-t border-gray-100 px-5 py-4 space-y-2.5 bg-brand-light/50">
-          <a href="tel:+51959388698"
+          <a href={`tel:+51${COMPANY.phone}`}
             className="flex items-center gap-2.5 text-sm text-gray-700 hover:text-brand-orange transition-colors">
             <Phone size={14} strokeWidth={2.5} />
-            <span>959 388 698 / 994 157 627</span>
+            <span>{COMPANY.phoneDisplay} / {COMPANY.phoneSecondary}</span>
           </a>
-          <a href="mailto:ventascorporativas@plastitex.pe"
+          <a href={`mailto:${COMPANY.email}`}
             className="flex items-center gap-2.5 text-sm text-gray-700 hover:text-brand-orange transition-colors break-all">
             <Mail size={14} strokeWidth={2.5} />
-            <span>ventascorporativas@plastitex.pe</span>
+            <span>{COMPANY.email}</span>
           </a>
         </div>
       </aside>

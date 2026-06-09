@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, Product, ProductExtra } from '@/types';
+import { CartItem, Product, ProductDetail, ProductExtra } from '@/types';
 
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (product: Product, options?: {
+  addItem: (product: Product | ProductDetail, options?: {
     quantity?: number;
+    unit_price?: string;
     unit_price_override?: string;
     selected_extras?: ProductExtra[];
     customization_notes?: string;
@@ -18,6 +19,16 @@ interface CartStore {
   closeCart: () => void;
   totalItems: () => number;
   totalPrice: () => number;
+}
+
+export function getItemUnitPrice(item: CartItem): number {
+  if (item.unit_price) {
+    return parseFloat(item.unit_price);
+  }
+  if (item.unit_price_override) {
+    return parseFloat(item.unit_price_override);
+  }
+  return parseFloat(item.product.base_price);
 }
 
 export const useCartStore = create<CartStore>()(
@@ -32,11 +43,11 @@ export const useCartStore = create<CartStore>()(
         const currentQty = existing?.quantity ?? 0;
         const addQty = options.quantity ?? 1;
 
-        // Validar contra stock real
         if (currentQty >= product.stock && product.stock > 0) return;
 
-        if (existing && !options.unit_price_override) {
-          // Incrementar cantidad si ya está en el carrito sin personalización especial
+        const unitPrice = options.unit_price ?? options.unit_price_override ?? undefined;
+
+        if (existing && !unitPrice) {
           set({
             items: items.map((i) =>
               i.product.id === product.id
@@ -45,10 +56,10 @@ export const useCartStore = create<CartStore>()(
             ),
           });
         } else {
-          // Agregar nuevo item (o reemplazar si viene con precio override del configurador)
           const newItem: CartItem = {
             product,
             quantity: addQty,
+            unit_price: unitPrice,
             unit_price_override: options.unit_price_override,
             selected_extras: options.selected_extras,
             customization_notes: options.customization_notes,
@@ -86,10 +97,7 @@ export const useCartStore = create<CartStore>()(
 
       totalPrice: () =>
         get().items.reduce((acc, i) => {
-          // Usar precio override si viene del configurador, si no usar base_price
-          const price = i.unit_price_override
-            ? parseFloat(i.unit_price_override)
-            : parseFloat(i.product.base_price);
+          const price = getItemUnitPrice(i);
           return acc + price * i.quantity;
         }, 0),
     }),

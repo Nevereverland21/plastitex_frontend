@@ -4,13 +4,10 @@ if (!phone) {
   throw new Error('Falta NEXT_PUBLIC_WHATSAPP_PHONE en .env.local');
 }
 function formatWhatsappDisplay(phone: string) {
-  // quitar cualquier cosa que no sea número
   const digits = phone.replace(/\D/g, '');
 
-  // Perú: +51
   if (digits.startsWith('51') && digits.length === 11) {
-    const local = digits.slice(2); // quitar 51
-
+    const local = digits.slice(2);
     return local.replace(/(\d{3})(\d{3})(\d{3})/, '$1 $2 $3');
   }
 
@@ -21,8 +18,16 @@ export const WHATSAPP = {
   phone,
   display: formatWhatsappDisplay(phone),
   baseUrl: `https://wa.me/${phone}`,
-
-  /** Construye un link de WhatsApp con mensaje pre-cargado */
   link: (message: string) =>
     `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+};
+
+export const COMPANY = {
+  name: 'Plastitex',
+  phone: '959388698',
+  phoneDisplay: '959 388 698',
+  phoneSecondary: '994 157 627',
+  email: 'ventascorporativas@plastitex.pe',
+  address: 'Jr. Áncash 919, Lima 15001',
+  schedule: 'Lunes a Viernes 8am – 6pm',
 };

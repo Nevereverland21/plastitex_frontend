@@ -277,7 +277,7 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
     };
   };
 
-  const hitHandle = (px: number, py: number, pos: LogoPosition): Handle => {
+  const hitHandle = useCallback((px: number, py: number, pos: LogoPosition): Handle => {
     const loc = toLocal(px, py, pos);
     const hw = pos.width / 2 + 3;
     const hh = pos.height / 2 + 3;
@@ -288,12 +288,12 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
     if (Math.hypot(loc.x - (-hw), loc.y -  hh)  < tol) return 'sw';
     if (Math.hypot(loc.x -  hw,  loc.y -  hh)  < tol) return 'se';
     return null;
-  };
+  }, []);
 
-  const insideLogo = (px: number, py: number, pos: LogoPosition) => {
+  const insideLogo = useCallback((px: number, py: number, pos: LogoPosition) => {
     const loc = toLocal(px, py, pos);
     return Math.abs(loc.x) <= pos.width / 2 + 6 && Math.abs(loc.y) <= pos.height / 2 + 6;
-  };
+  }, []);
 
   const onPointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -315,7 +315,7 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
       dragging.current = true;
       dragOffset.current = { x: pt.x - pos.x, y: pt.y - pos.y };
     }
-  }, []);
+  }, [hitHandle, insideLogo]);
 
   const onPointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;

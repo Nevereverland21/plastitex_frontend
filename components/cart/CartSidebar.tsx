@@ -1,6 +1,7 @@
 'use client';
 
 import { X, Trash2, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
 import { useCartStore } from '@/store/cartStore';
 import Link from 'next/link';
 
@@ -31,6 +32,7 @@ export default function CartSidebar() {
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Tu carrito</h2>
           <button onClick={closeCart}
+            aria-label="Cerrar carrito"
             className="p-2 rounded-full hover:bg-gray-100 transition-colors">
             <X size={20} />
           </button>
@@ -53,7 +55,7 @@ export default function CartSidebar() {
                   {/* Imagen */}
                   <div className="w-16 h-16 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
                     {product.image ? (
-                      <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                      <Image src={product.image} alt={product.name} width={64} height={64} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
                     )}
@@ -79,6 +81,7 @@ export default function CartSidebar() {
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(product.id, quantity - 1)}
+                        aria-label="Reducir cantidad"
                         className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300
                                    flex items-center justify-center text-sm font-bold transition-colors">
                         −
@@ -86,6 +89,7 @@ export default function CartSidebar() {
                       <span className="text-sm font-medium w-8 text-center">{quantity}</span>
                       <button
                         onClick={() => updateQuantity(product.id, quantity + 1)}
+                        aria-label="Aumentar cantidad"
                         className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300
                                    flex items-center justify-center text-sm font-bold transition-colors">
                         +
@@ -96,6 +100,7 @@ export default function CartSidebar() {
                   {/* Subtotal + eliminar */}
                   <div className="flex flex-col items-end justify-between self-stretch">
                     <button onClick={() => removeItem(product.id)}
+                      aria-label="Eliminar producto del carrito"
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors">
                       <Trash2 size={16} />
                     </button>

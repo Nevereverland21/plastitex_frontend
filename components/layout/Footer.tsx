@@ -58,6 +58,7 @@ export default function Footer() {
               <FooterLink href="/catalogo">Catálogo de productos</FooterLink>
               <FooterLink href="/trabaja-con-nosotros">Trabaja con nosotros</FooterLink>
               <FooterLink href="/reclamos">Libro de reclamaciones</FooterLink>
+              <FooterLink href="/seguimiento">Seguimiento de pedidos</FooterLink>
             </ul>
           </div>
 

@@ -5,7 +5,7 @@ import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import CartSidebar from '@/components/cart/CartSidebar';
 import WhatsAppButton from '@/components/ui/WhatsAppButton';
-import CartProvider from '@/components/cart/CartProvider';
+
 
 // display: 'swap' → no bloquea render mientras carga la fuente
 const inter = Inter({
@@ -51,16 +51,16 @@ export default function RootLayout({
     // suppressHydrationWarning → evita mismatch de hidratación por extensiones del browser
     <html lang="es" className={inter.variable} suppressHydrationWarning>
       <body className="bg-white text-gray-900 antialiased font-sans">
-        <CartProvider>
-          <Navbar />
-          <CartSidebar />
-          <WhatsAppButton />
-          {/* pt responsivo: ver comentario al inicio del archivo */}
-          <main className="pt-[132px] md:pt-20 lg:pt-[112px]">
-            {children}
-          </main>
-          <Footer />
-        </CartProvider>
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:bg-brand-navy focus:text-white focus:px-4 focus:py-2 focus:rounded-full focus:text-sm focus:font-semibold">
+          Saltar al contenido
+        </a>
+        <Navbar />
+        <CartSidebar />
+        <WhatsAppButton />
+        <main id="main-content" className="pt-[132px] md:pt-20 lg:pt-[112px]">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );

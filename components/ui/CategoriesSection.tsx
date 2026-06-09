@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Category } from '@/types';
 import { ArrowRight, Tag } from 'lucide-react';
 
@@ -56,10 +57,12 @@ export default function CategoriesSection({ categories }: Props) {
               {/* Círculo imagen */}
               <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-transparent group-hover:border-brand-orange transition-all duration-300 shadow-md group-hover:shadow-xl group-hover:shadow-brand-orange/20 group-hover:scale-105">
                 {category.image ? (
-                  <img
+                  <Image
                     src={category.image}
                     alt={category.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    fill
+                    sizes="96px"
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
                   <div className={`w-full h-full bg-gradient-to-br ${bgColors[i % bgColors.length]} flex items-center justify-center`}>
