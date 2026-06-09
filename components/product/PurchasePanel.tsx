@@ -39,7 +39,12 @@ export default function PurchasePanel({
   const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
 
   const [activeTab, setActiveTab]     = useState<PanelTab>('comprar');
-  const [quantity, setQuantity]       = useState(minUnits);
+  // Si el producto permite logo, inicializamos con la cantidad mínima para
+  // desbloquear la personalización, evitando que el tab aparezca bloqueado.
+  const initialQuantity = product.allows_logo
+    ? Math.max(minUnits, product.min_units_for_logo ?? minUnits)
+    : minUnits;
+  const [quantity, setQuantity]       = useState(initialQuantity);
   const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState<string | null>(null);

@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, Package } from 'lucide-react';
+import { ChevronRight, Package, PenLine, Trash2, X } from 'lucide-react';
 import type { ProductDetail, LogoSurcharge } from '@/types';
 import type { CustomizationData } from '@/types/customizer';
 import PurchasePanel from '@/components/product/PurchasePanel';
@@ -24,9 +24,14 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
   const [activeSurcharge, setActiveSurcharge] = useState<LogoSurcharge | null>(null);
   const [customization, setCustomization]     = useState<CustomizationData | null>(null);
   const [customizerOpen, setCustomizerOpen]   = useState(false);
+  const [previewOpen, setPreviewOpen]         = useState(false);
 
   const handleSaveCustomization = useCallback((data: CustomizationData) => {
     setCustomization(data);
+  }, []);
+
+  const handleDeleteCustomization = useCallback(() => {
+    setCustomization(null);
   }, []);
 
   return (
@@ -97,25 +102,42 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
             {customization?.logoPreviewUrl && (
               <div className="mt-3 rounded-2xl border border-brand-orange/20 bg-brand-orange/3
                               p-3 flex items-center gap-3">
-                <Image
-                  src={customization.logoPreviewUrl}
-                  alt="Vista previa logo"
-                  width={48}
-                  height={48}
-                  className="rounded-xl object-contain border border-brand-orange/20 bg-white flex-shrink-0"
-                />
+                <button
+                  onClick={() => setPreviewOpen(true)}
+                  className="relative flex-shrink-0 group"
+                  title="Ver personalización en grande"
+                >
+                  <Image
+                    src={customization.logoPreviewUrl}
+                    alt="Vista previa logo"
+                    width={48}
+                    height={48}
+                    className="rounded-xl object-contain border border-brand-orange/20 bg-white transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-brand-navy/0 group-hover:bg-brand-navy/10 rounded-xl transition-colors" />
+                </button>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-brand-navy">Vista previa con tu logo</p>
                   <p className="text-[10px] text-gray-500 mt-0.5 truncate">
                     {customization.customizationNotes || 'Sin notas adicionales'}
                   </p>
                 </div>
-                <button
-                  onClick={() => setCustomizerOpen(true)}
-                  className="text-[10px] font-bold text-brand-orange hover:underline flex-shrink-0"
-                >
-                  Editar
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button
+                    onClick={() => setCustomizerOpen(true)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-orange hover:bg-brand-orange/10 transition-colors"
+                    title="Editar personalización"
+                  >
+                    <PenLine size={16} />
+                  </button>
+                  <button
+                    onClick={handleDeleteCustomization}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Borrar personalización"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -143,6 +165,49 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         <ProductTabs product={product} />
       </div>
+
+      {/* ── Lightbox de preview de personalización ── */}
+      {previewOpen && customization?.logoPreviewUrl && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setPreviewOpen(false)}
+        >
+          <div className="relative max-w-3xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl">
+            <button
+              onClick={() => setPreviewOpen(false)}
+              className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70 transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <div className="aspect-square relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={customization.logoPreviewUrl}
+                alt="Vista previa de personalización"
+                className="w-full h-full object-contain p-6 bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100"
+              />
+            </div>
+            <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-bold text-brand-navy">{product.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {customization.customizationNotes || 'Sin notas adicionales'}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setCustomizerOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-orange text-white text-xs font-bold hover:bg-brand-orange/90 transition-colors"
+              >
+                <PenLine size={13} />
+                Editar diseño
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal de personalización ── */}
       {customizerOpen && (
