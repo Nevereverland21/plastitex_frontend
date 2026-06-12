@@ -70,7 +70,6 @@ export interface Product {
   featured: boolean;
   catalog_type: CatalogType;
   min_units: number;
-  max_direct_units: number;
   quote_threshold: number;
   allows_logo: boolean;
   min_units_for_logo: number;
@@ -94,7 +93,6 @@ export interface ProductDetail {
   featured: boolean;
   catalog_type: CatalogType;
   min_units: number;
-  max_direct_units: number;
   quote_threshold: number;
   allows_logo: boolean;
   min_units_for_logo: number;
@@ -193,6 +191,9 @@ export interface Order {
   created_at: string;
   updated_at: string;
   items: OrderItem[];
+  // Link de pago completo (100%) para pedidos minoristas. El backend lo
+  // genera automáticamente al crear el pedido; null si no aplica.
+  payment_url?: string | null;
 }
 
 export interface CreateOrderPayload {
@@ -242,7 +243,7 @@ export interface PaymentLink {
   remaining_amount: string;
   amount_to_pay: string;
   link_type: string;
-  link_type_value: 'advance' | 'remaining';
+  link_type_value: 'advance' | 'remaining' | 'full';
   delivery_type: string;
   items: PaymentLinkItem[];
   is_active: boolean;

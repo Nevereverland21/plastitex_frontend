@@ -10,7 +10,16 @@ interface PaymentSummaryProps {
 
 export default function PaymentSummary({ link }: PaymentSummaryProps) {
   const isAdvance = link.link_type_value === 'advance';
+  const isFull = link.link_type_value === 'full';
   const remaining = isAdvance ? link.remaining_amount : '0.00';
+
+  const badgeLabel = isFull ? 'Pago completo' : isAdvance ? 'Pago de adelanto' : 'Pago del restante';
+  const badgeClass = isFull
+    ? 'bg-emerald-100 text-emerald-700'
+    : isAdvance
+      ? 'bg-amber-100 text-amber-700'
+      : 'bg-purple-100 text-purple-700';
+  const conceptLabel = isFull ? 'Pago completo (100%)' : isAdvance ? 'Adelanto (50%)' : 'Restante (50%)';
 
   return (
     <div className="space-y-5">
@@ -21,13 +30,9 @@ export default function PaymentSummary({ link }: PaymentSummaryProps) {
           <h2 className="mt-0.5 text-lg font-bold text-gray-900">{link.customer_name}</h2>
         </div>
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-            isAdvance
-              ? 'bg-amber-100 text-amber-700'
-              : 'bg-purple-100 text-purple-700'
-          }`}
+          className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}
         >
-          {isAdvance ? 'Pago de adelanto' : 'Pago del restante'}
+          {badgeLabel}
         </span>
       </div>
 
@@ -62,7 +67,7 @@ export default function PaymentSummary({ link }: PaymentSummaryProps) {
         </div>
 
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{isAdvance ? 'Adelanto (50%)' : 'Restante (50%)'}</span>
+          <span className="text-gray-600">{conceptLabel}</span>
           <span className="font-semibold text-gray-900">{formatPrice(link.amount_to_pay)}</span>
         </div>
 

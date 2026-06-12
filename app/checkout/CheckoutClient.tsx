@@ -20,12 +20,17 @@ import SuccessScreen from '@/components/checkout/SuccessScreen';
 
 const BUY_NOW_KEY = 'plastitex-buy-now';
 const SUCCESS_KEY = 'plastitex-checkout-success';
+// El estado de éxito persistido vence a los 15 min para que un pedido viejo
+// no "secuestre" un checkout futuro mostrando la pantalla de éxito anterior.
+const SUCCESS_TTL_MS = 15 * 60 * 1000;
 
 interface SuccessPersistState {
   publicToken: string;
   waUrl: string;
+  paymentUrl: string;
   customerName: string;
   paymentMethod: PaymentMethod;
+  savedAt: number;
 }
 
 interface CheckoutClientProps {
@@ -63,6 +68,7 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
   const [success, setSuccess] = useState(false);
   const [publicToken, setPublicToken] = useState<string | null>(null);
   const [waUrl, setWaUrl] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState('');
   const [mounted, setMounted] = useState(false);
 
   // Restaurar buyNow y estado de éxito desde sessionStorage
@@ -80,7 +86,11 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
     if (savedSuccessRaw) {
       try {
         const parsed = JSON.parse(savedSuccessRaw);
-        if (parsed && typeof parsed.publicToken === 'string' && parsed.publicToken) {
+        const isFresh =
+          parsed &&
+          typeof parsed.savedAt === 'number' &&
+          Date.now() - parsed.savedAt < SUCCESS_TTL_MS;
+        if (isFresh && typeof parsed.publicToken === 'string' && parsed.publicToken) {
           setSuccessState(parsed);
         } else {
           sessionStorage.removeItem(SUCCESS_KEY);
@@ -107,13 +117,15 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
       const state: SuccessPersistState = {
         publicToken,
         waUrl,
+        paymentUrl,
         customerName: contact.customer_name,
         paymentMethod: selectedMethod,
+        savedAt: Date.now(),
       };
       sessionStorage.setItem(SUCCESS_KEY, JSON.stringify(state));
       setSuccessState(state);
     }
-  }, [success, publicToken, waUrl, contact.customer_name, selectedMethod]);
+  }, [success, publicToken, waUrl, paymentUrl, contact.customer_name, selectedMethod]);
 
   const handleDeliveryNext = () => {
     if (delivery.deliveryType === 'delivery' && !delivery.address.trim()) {
@@ -186,14 +198,17 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
         setWaUrl(result.redirectUrl);
       }
 
+      setPaymentUrl(order.payment_url || '');
       setPublicToken(order.public_token);
 
       // Guardar estado de éxito ANTES de limpiar formularios
       const successData: SuccessPersistState = {
         publicToken: order.public_token,
         waUrl: result.redirectUrl || '',
+        paymentUrl: order.payment_url || '',
         customerName: contact.customer_name,
         paymentMethod: selectedMethod,
+        savedAt: Date.now(),
       };
       sessionStorage.setItem(SUCCESS_KEY, JSON.stringify(successData));
       setSuccessState(successData);
@@ -224,13 +239,15 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
   };
 
   const dismissSuccess = useCallback(() => {
+    // Solo limpiamos el storage. A propósito NO reseteamos el estado de React
+    // (success/successState/publicToken): si lo hiciéramos, el componente se
+    // re-renderizaría al branch "carrito vacío" durante la fracción de segundo
+    // que tarda el <Link> en navegar, que es exactamente el "rebote al checkout"
+    // que reportaba el cliente. La pantalla de éxito queda montada hasta que la
+    // navegación a /catalogo (o /pedidos/...) completa y el componente se desmonta.
     sessionStorage.removeItem(SUCCESS_KEY);
-    setSuccessState(null);
-    setSuccess(false);
-    setPublicToken(null);
-    setWaUrl('');
-    clearForm();
-  }, [clearForm]);
+    sessionStorage.removeItem(BUY_NOW_KEY);
+  }, []);
 
   const isSuccessVisible = (success || !!successState) && (publicToken ?? successState?.publicToken);
 
@@ -258,6 +275,7 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
       <SuccessScreen
         publicToken={publicToken ?? successState!.publicToken}
         waUrl={waUrl || successState?.waUrl || ''}
+        paymentUrl={paymentUrl || successState?.paymentUrl || ''}
         customerName={successState?.customerName ?? contact.customer_name}
         paymentMethod={successState?.paymentMethod ?? selectedMethod}
         onDismiss={dismissSuccess}

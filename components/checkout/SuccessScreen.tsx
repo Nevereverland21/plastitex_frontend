@@ -1,19 +1,20 @@
 'use client';
 
 import { useEffect } from 'react';
-import { CheckCircle, MessageCircle, Package, Clock } from 'lucide-react';
+import { CheckCircle, MessageCircle, Package, Clock, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { PaymentMethod } from '@/types';
 
 interface SuccessScreenProps {
   publicToken: string;
   waUrl?: string;
+  paymentUrl?: string;
   customerName: string;
   paymentMethod: PaymentMethod;
   onDismiss?: () => void;
 }
 
-export default function SuccessScreen({ publicToken, waUrl, customerName, paymentMethod, onDismiss }: SuccessScreenProps) {
+export default function SuccessScreen({ publicToken, waUrl, paymentUrl, customerName, paymentMethod, onDismiss }: SuccessScreenProps) {
   const isWhatsApp = paymentMethod === 'whatsapp';
 
   useEffect(() => {
@@ -97,6 +98,17 @@ export default function SuccessScreen({ publicToken, waUrl, customerName, paymen
         </div>
 
         <div className="flex flex-col gap-2.5">
+          {paymentUrl && (
+            <a
+              href={paymentUrl}
+              onClick={onDismiss}
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl font-bold text-sm bg-brand-navy text-white hover:bg-brand-orange transition-all duration-200 shadow-md hover:scale-[1.01] active:scale-[0.99]"
+            >
+              <CreditCard size={17} />
+              Pagar ahora con link
+            </a>
+          )}
+
           {isWhatsApp && waUrl && (
             <a
               href={waUrl}
