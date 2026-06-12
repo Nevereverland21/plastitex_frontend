@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Mail, Phone, ChevronRight, ChevronLeft } from 'lucide-react';
+import { User, Mail, Phone, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react';
 
 export interface ContactFormData {
   customer_name: string;
@@ -92,7 +92,7 @@ export default function ContactStep({
             </div>
             {errors[name] ? (
               <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                <span>✕</span> {errors[name]}
+                <AlertCircle size={12} className="flex-shrink-0" /> {errors[name]}
               </p>
             ) : (
               <p className="text-gray-400 text-[11px] mt-1.5">{hint}</p>

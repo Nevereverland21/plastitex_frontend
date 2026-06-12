@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import type { CartItem } from '@/types';
+import type { CartItem, StoreLocation } from '@/types';
 import type { PaymentMethod } from '@/types';
+import { getStoreLocations } from '@/lib/api';
 import { useCartStore, getItemUnitPrice } from '@/store/cartStore';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import { useCreateOrder } from '@/hooks/checkout/useCreateOrder';
@@ -69,6 +70,7 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
   const [publicToken, setPublicToken] = useState<string | null>(null);
   const [waUrl, setWaUrl] = useState('');
   const [paymentUrl, setPaymentUrl] = useState('');
+  const [storeLocation, setStoreLocation] = useState<StoreLocation | null>(null);
   const [mounted, setMounted] = useState(false);
 
   // Restaurar buyNow y estado de éxito desde sessionStorage
@@ -90,7 +92,11 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
           parsed &&
           typeof parsed.savedAt === 'number' &&
           Date.now() - parsed.savedAt < SUCCESS_TTL_MS;
-        if (isFresh && typeof parsed.publicToken === 'string' && parsed.publicToken) {
+        // Si el usuario vuelve al checkout con ítems en el carrito, es un pedido
+        // nuevo: no restauramos la pantalla de éxito anterior (la habríamos
+        // mostrado en vez del formulario de compra).
+        const startingNewOrder = useCartStore.getState().items.length > 0;
+        if (isFresh && !startingNewOrder && typeof parsed.publicToken === 'string' && parsed.publicToken) {
           setSuccessState(parsed);
         } else {
           sessionStorage.removeItem(SUCCESS_KEY);
@@ -106,10 +112,28 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
   // Persistir buyNowItem cuando llega por props
   useEffect(() => {
     if (buyNowItem) {
+      // Una nueva intención de "Comprar ahora" descarta cualquier pantalla de
+      // éxito previa. Sin esto, al hacer "Comprar ahora" otra vez en la misma
+      // pestaña (sin recargar), el estado de éxito del pedido anterior seguía
+      // vivo en memoria y tapaba el formulario de compra del producto nuevo.
+      sessionStorage.removeItem(SUCCESS_KEY);
+      setSuccessState(null);
+      setSuccess(false);
+      setPublicToken(null);
+
       sessionStorage.setItem(BUY_NOW_KEY, JSON.stringify(buyNowItem));
       setSavedBuyNow(buyNowItem);
     }
   }, [buyNowItem]);
+
+  // Sede de recojo desde el backend (StoreLocation), para no hardcodear la
+  // dirección en el resumen del pedido. Falla en silencio: el ConfirmStep cae
+  // a un texto por defecto si no hay sede.
+  useEffect(() => {
+    getStoreLocations()
+      .then((locs) => setStoreLocation(locs[0] ?? null))
+      .catch(() => {});
+  }, []);
 
   // Persistir estado de éxito
   useEffect(() => {
@@ -328,6 +352,7 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
                 loading={orderStatus === 'loading'}
                 error={orderError}
                 paymentMethod={selectedMethod}
+                storeLocation={storeLocation}
                 onPaymentMethodChange={(method: PaymentMethod) => setMethod(method)}
                 onConfirm={handleConfirm}
                 onBack={() => setStep(2)}

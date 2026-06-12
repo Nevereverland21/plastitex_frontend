@@ -1,6 +1,6 @@
 'use client';
 
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/formatters';
@@ -50,8 +50,8 @@ export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
                   {quantity} uds · S/ {formatPrice(price)} c/u
                 </p>
                 {customization_notes && (
-                  <p className="text-[10px] text-brand-orange mt-0.5 truncate">
-                    ✦ {customization_notes}
+                  <p className="text-[10px] text-brand-orange mt-0.5 truncate flex items-center gap-1">
+                    <Sparkles size={10} className="flex-shrink-0" /> {customization_notes}
                   </p>
                 )}
               </div>

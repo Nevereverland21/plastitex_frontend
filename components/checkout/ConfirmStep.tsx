@@ -1,8 +1,8 @@
 'use client';
 
-import { ChevronLeft, CheckCircle, Loader2, User, Mail, Phone, Store, Truck } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Loader2, User, Mail, Phone, Store, Truck, Sparkles, MessageCircle, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
-import type { CartItem } from '@/types';
+import type { CartItem, StoreLocation } from '@/types';
 import type { ContactFormData } from '@/types/checkout';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import { PaymentMethod } from '@/types';
@@ -16,6 +16,7 @@ interface ConfirmStepProps {
   loading: boolean;
   error?: string | null;
   paymentMethod: PaymentMethod;
+  storeLocation?: StoreLocation | null;
   onPaymentMethodChange: (method: PaymentMethod) => void;
   onConfirm: (e?: React.MouseEvent<HTMLButtonElement>) => void;
   onBack: () => void;
@@ -29,6 +30,7 @@ export default function ConfirmStep({
   loading,
   error,
   paymentMethod,
+  storeLocation,
   onPaymentMethodChange,
   onConfirm,
   onBack,
@@ -67,7 +69,9 @@ export default function ConfirmStep({
                   <p className="text-xs font-semibold text-gray-900 truncate">{product.name}</p>
                   <p className="text-[10px] text-gray-400">{quantity} uds · S/ {formatPrice(price)} c/u</p>
                   {customization_notes && (
-                    <p className="text-[10px] text-brand-orange truncate">✦ {customization_notes}</p>
+                    <p className="text-[10px] text-brand-orange truncate flex items-center gap-1">
+                      <Sparkles size={10} className="flex-shrink-0" /> {customization_notes}
+                    </p>
                   )}
                 </div>
                 <p className="text-xs font-bold text-brand-navy shrink-0">S/ {formatPrice(price * quantity)}</p>
@@ -117,7 +121,9 @@ export default function ConfirmStep({
             </p>
             <p className="text-[11px] text-gray-500 mt-0.5">
               {deliveryType === 'pickup'
-                ? 'Jr. Áncash 919, Lima 15001 · L-V 8am–6pm'
+                ? (storeLocation
+                    ? `${storeLocation.address}${storeLocation.schedule ? ` · ${storeLocation.schedule}` : ''}`
+                    : 'Jr. Áncash 919, Lima 15001 · L-V 8am–6pm')
                 : address
               }
             </p>
@@ -134,7 +140,7 @@ export default function ConfirmStep({
       {/* Aviso WhatsApp */}
       {paymentMethod === 'whatsapp' && (
         <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-start gap-3">
-          <span className="text-lg flex-shrink-0">💬</span>
+          <MessageCircle size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-green-700 leading-relaxed">
             Al confirmar, se registrará tu pedido y se abrirá <strong>WhatsApp</strong> para coordinar el pago con un asesor de Plastitex.
           </p>
@@ -145,7 +151,7 @@ export default function ConfirmStep({
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
           <p className="text-xs text-red-700 font-medium flex items-center gap-2">
-            <span className="text-sm">✕</span>
+            <AlertCircle size={14} className="flex-shrink-0" />
             {error}
           </p>
         </div>
