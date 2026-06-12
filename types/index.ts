@@ -71,6 +71,7 @@ export interface Product {
   catalog_type: CatalogType;
   min_units: number;
   quote_threshold: number;
+  wholesale_threshold: number;
   allows_logo: boolean;
   min_units_for_logo: number;
   category_name: string;
@@ -94,6 +95,7 @@ export interface ProductDetail {
   catalog_type: CatalogType;
   min_units: number;
   quote_threshold: number;
+  wholesale_threshold: number;
   allows_logo: boolean;
   min_units_for_logo: number;
   category: Category;
@@ -120,6 +122,7 @@ export interface LogoSurcharge {
   technique_display: string;
   colors: number;
   price_extra: number;
+  channel: 'retail' | 'wholesale' | 'both';
 }
 
 // ─── STORE LOCATION ───────────────────────────────────────────────────────────
@@ -222,6 +225,7 @@ export interface CreateQuotePayload {
   company?: string;
   product: number;
   quantity: number;
+  technique?: string;
   logo_notes?: string;
   message?: string;
 }

@@ -5,11 +5,11 @@ import { ShoppingBag, Building2, Sparkles, Share2 } from 'lucide-react';
 import type { ProductDetail, LogoSurcharge, QuoteResponse } from '@/types';
 import type { CustomizationData } from '@/types/customizer';
 import { getProductQuote } from '@/lib/api';
-import { WHATSAPP } from '@/lib/config';
 import { useCartStore } from '@/store/cartStore';
 import PricingTab from './PricingTab';
 import CustomizerTab from './CustomizerTab';
 import StickyTotal from './StickyTotal';
+import QuoteRequestModal from './QuoteRequestModal';
 
 type PanelTab = 'comprar' | 'personalizar';
 
@@ -54,6 +54,34 @@ export default function PurchasePanel({
   const [error, setError]             = useState<string | null>(null);
   const [addedToCart, setAddedToCart] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showQuoteForm, setShowQuoteForm] = useState(false);
+
+  // ── Canal efectivo y modo mayorista ──────────────────────────────────────
+  const wholesaleThreshold = product.wholesale_threshold ?? 100;
+  // Mayorista si el producto ya es mayorista, o si la cantidad alcanza el umbral.
+  const effectiveChannel: 'retail' | 'wholesale' =
+    product.catalog_type === 'wholesale' || quantity >= wholesaleThreshold
+      ? 'wholesale'
+      : 'retail';
+  // Un producto vendido como minorista que cruzó el umbral entra en modo mayorista.
+  const wholesaleModeActive =
+    product.catalog_type !== 'wholesale' && quantity >= wholesaleThreshold;
+
+  // Técnicas visibles según canal: minorista solo DTF, mayorista DTF + serigrafía.
+  const visibleSurcharges = surcharges.filter((s) =>
+    effectiveChannel === 'wholesale'
+      ? s.channel === 'wholesale' || s.channel === 'both'
+      : s.channel === 'retail' || s.channel === 'both'
+  );
+
+  // Si la técnica seleccionada deja de ofrecerse al cambiar de canal
+  // (ej. bajar de mayorista a minorista con serigrafía elegida), se limpia.
+  useEffect(() => {
+    if (activeSurcharge && !visibleSurcharges.some((s) => s.id === activeSurcharge.id)) {
+      onActiveSurchargeChange(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveChannel, activeSurcharge?.id]);
 
   // ── CTA state ────────────────────────────────────────────────────────────
   const ctaState = (() => {
@@ -123,21 +151,28 @@ export default function PurchasePanel({
     setTimeout(() => setAddedToCart(false), 2500);
   }, [addItem, product, quantity, quoteResult, activeSurcharge, customization]);
 
-  const handleRequestQuote = useCallback(() => {
-    const lines = [
-      `Hola, me interesa cotizar *${product.name}*`,
-      `Cantidad: ${quantity} unidades`,
-      quoteResult
-        ? `Precio estimado: S/ ${parseFloat(quoteResult.total).toFixed(2).replace('.', ',')}`
-        : '',
-      activeSurcharge
-        ? `Técnica: ${activeSurcharge.technique_display}${activeSurcharge.colors > 0 ? ` (${activeSurcharge.colors} colores)` : ''}`
-        : '',
-      customization?.customizationNotes ? `Detalles: ${customization.customizationNotes}` : '',
-      `Producto: ${typeof window !== 'undefined' ? window.location.href : ''}`,
-    ].filter(Boolean).join('\n');
-    window.open(WHATSAPP.link(lines), '_blank');
-  }, [product, quantity, quoteResult, activeSurcharge, customization]);
+  // Notas de personalización para la cotización (técnica + notas del cliente).
+  const quoteLogoNotes = (() => {
+    const notes: string[] = [];
+    if (activeSurcharge) {
+      notes.push(`Técnica: ${activeSurcharge.technique_display}${
+        activeSurcharge.colors > 0 ? ` (${activeSurcharge.colors} colores)` : ' (full color)'
+      }`);
+    }
+    if (customization?.customizationNotes) notes.push(customization.customizationNotes);
+    return notes.join(' | ');
+  })();
+
+  const quoteWhatsappMessage = [
+    `Hola, me interesa cotizar *${product.name}*`,
+    `Cantidad: ${quantity} unidades`,
+    quoteResult ? `Precio estimado: S/ ${parseFloat(quoteResult.total).toFixed(2).replace('.', ',')}` : '',
+    quoteLogoNotes ? `Personalización: ${quoteLogoNotes}` : '',
+    `Producto: ${typeof window !== 'undefined' ? window.location.href : ''}`,
+  ].filter(Boolean).join('\n');
+
+  // Abre el formulario: registra el Quote en el backend y luego abre WhatsApp.
+  const handleRequestQuote = useCallback(() => setShowQuoteForm(true), []);
 
   return (
     <div className="flex flex-col h-full">
@@ -209,6 +244,17 @@ export default function PurchasePanel({
         <div className="mt-3" />
       )}
 
+      {/* ── Banner modo mayorista ── */}
+      {wholesaleModeActive && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl bg-brand-navy/5 border border-brand-navy/15 px-3 py-2.5">
+          <Building2 size={15} className="text-brand-navy flex-shrink-0 mt-0.5" />
+          <p className="text-[11px] text-brand-navy leading-relaxed">
+            <strong>Modo mayorista.</strong> Desde {wholesaleThreshold} unidades este pedido se cotiza
+            como mayorista, con precios por volumen y opciones DTF + serigrafía.
+          </p>
+        </div>
+      )}
+
       {/* ── Tab content (scrollable internamente si hace falta) ── */}
       <div className="flex-1 overflow-y-auto min-h-0 py-2
                       scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
@@ -224,7 +270,7 @@ export default function PurchasePanel({
         )}
         {activeTab === 'personalizar' && canCustomize && (
           <CustomizerTab
-            surcharges={surcharges}
+            surcharges={visibleSurcharges}
             active={activeSurcharge}
             quantity={quantity}
             minUnitsForLogo={product.min_units_for_logo ?? 100}
@@ -247,6 +293,18 @@ export default function PurchasePanel({
         onAddToCart={handleAddToCart}
         onRequestQuote={handleRequestQuote}
       />
+
+      {showQuoteForm && (
+        <QuoteRequestModal
+          product={product}
+          quantity={quantity}
+          technique={activeSurcharge?.technique}
+          logoNotes={quoteLogoNotes}
+          estimatedTotal={quoteResult?.total ?? null}
+          whatsappMessage={quoteWhatsappMessage}
+          onClose={() => setShowQuoteForm(false)}
+        />
+      )}
     </div>
   );
 }
