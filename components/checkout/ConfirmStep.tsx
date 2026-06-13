@@ -1,12 +1,14 @@
 'use client';
 
-import { ChevronLeft, CheckCircle, Loader2, User, Mail, Phone, Store, Truck, Sparkles, MessageCircle, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, CheckCircle, Loader2, User, Mail, Phone, Store, Truck, Sparkles, MessageCircle, AlertCircle, Info } from 'lucide-react';
 import Image from 'next/image';
-import type { CartItem, StoreLocation } from '@/types';
+import type { CartItem, StoreLocation, StorePolicy } from '@/types';
 import type { ContactFormData } from '@/types/checkout';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import { PaymentMethod } from '@/types';
 import { formatPrice } from '@/lib/formatters';
+import { getStorePolicy } from '@/lib/api';
 
 interface ConfirmStepProps {
   items: CartItem[];
@@ -40,6 +42,28 @@ export default function ConfirmStep({
     const price = parseFloat(priceStr);
     return acc + price * i.quantity;
   }, 0);
+
+  // Pedido "grande": algún ítem alcanza el umbral mayorista de su producto.
+  // En ese caso el cliente debe aceptar la política de modificación (las
+  // reducciones se re-tarifan y pueden tener penalidad si entró a producción).
+  const isLargeOrder = items.some(
+    (i) => i.quantity >= (i.product.wholesale_threshold ?? 100)
+  );
+
+  const [policy, setPolicy] = useState<StorePolicy | null>(null);
+  const [accepted, setAccepted] = useState(false);
+
+  useEffect(() => {
+    if (!isLargeOrder) return;
+    getStorePolicy()
+      .then(setPolicy)
+      .catch(() => setPolicy(null));
+  }, [isLargeOrder]);
+
+  // Solo exigimos aceptación si es pedido grande Y la política cargó.
+  // Si el aviso no se pudo cargar, no bloqueamos el checkout (fail-open).
+  const requiresAcceptance = isLargeOrder && !!policy;
+  const confirmBlocked = loading || (requiresAcceptance && !accepted);
 
   return (
     <div className="space-y-5">
@@ -157,6 +181,35 @@ export default function ConfirmStep({
         </div>
       )}
 
+      {/* Aviso de modificación — pedidos grandes / mayoristas */}
+      {requiresAcceptance && policy && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3.5 space-y-3">
+          <div className="flex items-start gap-3">
+            <Info size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-800 mb-1">
+                Condiciones para pedidos al por mayor
+              </p>
+              <p className="text-[11px] text-amber-700 leading-relaxed">
+                {policy.amendment_notice}
+              </p>
+            </div>
+          </div>
+          <label className="flex items-start gap-2.5 cursor-pointer pl-1">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={(e) => setAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-amber-300 text-brand-navy
+                         focus:ring-brand-navy/30 cursor-pointer"
+            />
+            <span className="text-[11px] font-semibold text-amber-800 leading-relaxed">
+              He leído y acepto estas condiciones.
+            </span>
+          </label>
+        </div>
+      )}
+
       {/* Botones */}
       <div className="flex gap-3">
         <button
@@ -174,7 +227,7 @@ export default function ConfirmStep({
         <button
           type="button"
           onClick={onConfirm}
-          disabled={loading}
+          disabled={confirmBlocked}
           className="flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-2xl
                      font-bold text-sm transition-all duration-300 shadow-lg
                      bg-brand-navy text-white hover:bg-brand-orange shadow-brand-navy/20

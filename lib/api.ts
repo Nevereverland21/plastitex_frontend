@@ -12,6 +12,7 @@ import type {
   CreateJobApplicationPayload,
   LogoSurcharge,
   StoreLocation,
+  StorePolicy,
   PaymentLink,
   CatalogType,
 } from '@/types';
@@ -112,6 +113,11 @@ export async function getLogoSurcharges(): Promise<LogoSurcharge[]> {
 export async function getStoreLocations(): Promise<StoreLocation[]> {
   const { data } = await api.get('/api/store-locations/');
   return unwrapList<StoreLocation>(data);
+}
+
+export async function getStorePolicy(): Promise<StorePolicy> {
+  const { data } = await api.get('/api/store-policy/');
+  return data;
 }
 
 export async function getPaymentLink(token: string): Promise<PaymentLink> {

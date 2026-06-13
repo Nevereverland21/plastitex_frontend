@@ -137,6 +137,15 @@ export interface StoreLocation {
   phone: string;
 }
 
+// ─── POLÍTICA DE LA TIENDA ────────────────────────────────────────────────────
+
+export interface StorePolicy {
+  /** Aviso que el cliente acepta en pedidos grandes. Ya viene con los días resueltos. */
+  amendment_notice: string;
+  /** Días de margen para cambios sin costo. */
+  change_freeze_days: number;
+}
+
 // ─── QUOTE (cotizador en tiempo real) ────────────────────────────────────────
 
 export interface QuoteResponse {

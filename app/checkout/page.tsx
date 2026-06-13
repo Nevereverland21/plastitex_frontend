@@ -36,6 +36,7 @@ async function getCheckoutData(searchParams: Awaited<PageProps['searchParams']>)
         catalog_type: product.catalog_type,
         min_units: product.min_units,
         quote_threshold: product.quote_threshold,
+        wholesale_threshold: product.wholesale_threshold,
         allows_logo: product.allows_logo,
         min_units_for_logo: product.min_units_for_logo,
         category_name: product.category?.name ?? '',
