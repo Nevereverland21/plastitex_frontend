@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
-import { CheckCircle, MessageCircle, Package, Clock, CreditCard } from 'lucide-react';
+import { CheckCircle, MessageCircle, Package, Clock, CreditCard, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { PaymentMethod } from '@/types';
 
@@ -11,20 +10,18 @@ interface SuccessScreenProps {
   paymentUrl?: string;
   customerName: string;
   paymentMethod: PaymentMethod;
+  deliveryType?: 'pickup' | 'delivery';
   onDismiss?: () => void;
 }
 
-export default function SuccessScreen({ publicToken, waUrl, paymentUrl, customerName, paymentMethod, onDismiss }: SuccessScreenProps) {
+export default function SuccessScreen({ publicToken, waUrl, paymentUrl, customerName, paymentMethod, deliveryType, onDismiss }: SuccessScreenProps) {
   const isWhatsApp = paymentMethod === 'whatsapp';
+  // En delivery el monto final (con envío) y el link de pago se confirman por
+  // WhatsApp, así que aquí todavía no hay link de pago para mostrar.
+  const isDelivery = deliveryType === 'delivery';
 
-  useEffect(() => {
-    if (isWhatsApp && waUrl) {
-      const timer = setTimeout(() => {
-        window.open(waUrl, '_blank');
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [waUrl, isWhatsApp]);
+  // No abrimos WhatsApp automáticamente: los navegadores bloquean window.open
+  // fuera de un clic del usuario. El botón "Abrir WhatsApp" de abajo es la acción.
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4">
@@ -48,9 +45,9 @@ export default function SuccessScreen({ publicToken, waUrl, paymentUrl, customer
 
         {isWhatsApp ? (
           <div className="flex items-center justify-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0" />
+            <MessageCircle size={14} className="text-green-600 flex-shrink-0" />
             <p className="text-green-700 text-xs font-medium">
-              Abriendo WhatsApp para coordinar el pago...
+              Toca <strong>&ldquo;Abrir WhatsApp&rdquo;</strong> para coordinar tu pago con un asesor.
             </p>
           </div>
         ) : (
@@ -58,6 +55,16 @@ export default function SuccessScreen({ publicToken, waUrl, paymentUrl, customer
             <Clock size={14} className="text-amber-600 flex-shrink-0" />
             <p className="text-amber-700 text-xs font-medium">
               Esperando confirmación de pago...
+            </p>
+          </div>
+        )}
+
+        {isDelivery && (
+          <div className="flex items-start justify-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-left">
+            <Truck size={15} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <p className="text-blue-700 text-xs leading-relaxed">
+              Tu pedido es con <strong>delivery</strong>: el costo de envío se confirma por
+              WhatsApp según tu ubicación. Ahí recibirás el <strong>monto final y el link de pago</strong>.
             </p>
           </div>
         )}

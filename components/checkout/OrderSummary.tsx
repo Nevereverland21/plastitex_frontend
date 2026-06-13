@@ -4,6 +4,7 @@ import { ShoppingBag, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/formatters';
+import { getItemUnitPrice } from '@/store/cartStore';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -11,10 +12,7 @@ interface OrderSummaryProps {
 }
 
 export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
-  const subtotal = items.reduce((acc, i) => {
-    const price = parseFloat(i.unit_price_override ?? i.product.base_price);
-    return acc + price * i.quantity;
-  }, 0);
+  const subtotal = items.reduce((acc, i) => acc + getItemUnitPrice(i) * i.quantity, 0);
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -31,8 +29,9 @@ export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
 
       {/* Items */}
       <div className="divide-y divide-gray-50">
-        {items.map(({ product, quantity, unit_price_override, customization_notes }) => {
-          const price = parseFloat(unit_price_override ?? product.base_price);
+        {items.map((item) => {
+          const { product, quantity, customization_notes } = item;
+          const price = getItemUnitPrice(item);
           return (
             <div key={product.id} className="flex gap-3 items-center px-5 py-3.5">
               {/* Imagen */}

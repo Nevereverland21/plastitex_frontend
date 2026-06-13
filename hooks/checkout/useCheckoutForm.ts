@@ -22,6 +22,9 @@ export function useCheckoutForm(): UseCheckoutFormReturn {
   const [delivery, setDeliveryState] = useState<DeliveryFormData>({
     deliveryType: 'pickup',
     address: '',
+    reference: '',
+    latitude: null,
+    longitude: null,
   });
   const [contact, setContactState] = useState<ContactFormData>({
     customer_name: '',
@@ -49,6 +52,9 @@ export function useCheckoutForm(): UseCheckoutFormReturn {
           setDeliveryState({
             deliveryType: parsed.deliveryType as 'pickup' | 'delivery',
             address: typeof parsed.address === 'string' ? parsed.address : '',
+            reference: typeof parsed.reference === 'string' ? parsed.reference : '',
+            latitude: typeof parsed.latitude === 'number' ? parsed.latitude : null,
+            longitude: typeof parsed.longitude === 'number' ? parsed.longitude : null,
           });
           setContactState({
             customer_name: String(parsed.contact.customer_name ?? ''),
@@ -70,6 +76,9 @@ export function useCheckoutForm(): UseCheckoutFormReturn {
       step,
       deliveryType: delivery.deliveryType,
       address: delivery.address,
+      reference: delivery.reference,
+      latitude: delivery.latitude,
+      longitude: delivery.longitude,
       contact,
       paymentMethod: 'whatsapp',
     };
@@ -130,7 +139,7 @@ export function useCheckoutForm(): UseCheckoutFormReturn {
   const clearForm = useCallback(() => {
     sessionStorage.removeItem(STORAGE_KEY);
     setStepState(1);
-    setDeliveryState({ deliveryType: 'pickup', address: '' });
+    setDeliveryState({ deliveryType: 'pickup', address: '', reference: '', latitude: null, longitude: null });
     setContactState({ customer_name: '', email: '', phone: '' });
     setContactErrors({});
   }, []);

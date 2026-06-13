@@ -130,11 +130,6 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   return data;
 }
 
-export async function getOrderStatus(orderId: number): Promise<Order> {
-  const { data } = await api.get(`/api/orders/${orderId}/`);
-  return data;
-}
-
 export async function createQuote(
   payload: CreateQuotePayload
 ): Promise<{ message: string }> {

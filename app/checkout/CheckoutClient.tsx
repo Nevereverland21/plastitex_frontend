@@ -152,7 +152,10 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
   }, [success, publicToken, waUrl, paymentUrl, contact.customer_name, selectedMethod]);
 
   const handleDeliveryNext = () => {
-    if (delivery.deliveryType === 'delivery' && !delivery.address.trim()) {
+    const hasLocation =
+      delivery.address.trim().length > 0 ||
+      (delivery.latitude != null && delivery.longitude != null);
+    if (delivery.deliveryType === 'delivery' && !hasLocation) {
       return;
     }
     setStep(2);
@@ -178,14 +181,17 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
       customization_notes: i.customization_notes || undefined,
     }));
 
+    const isDelivery = delivery.deliveryType === 'delivery';
     const payload = {
       customer_name: contact.customer_name,
       email: contact.email,
       phone: contact.phone,
-      address: delivery.deliveryType === 'delivery' ? delivery.address : undefined,
+      address: isDelivery ? delivery.address : undefined,
+      address_reference: isDelivery ? (delivery.reference || undefined) : undefined,
+      delivery_latitude: isDelivery ? delivery.latitude : undefined,
+      delivery_longitude: isDelivery ? delivery.longitude : undefined,
       order_type: 'retail' as const,
       delivery_type: delivery.deliveryType,
-      delivery_cost: '0.00',
       payment_method: selectedMethod,
       items: orderItems,
     };
@@ -302,6 +308,7 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
         paymentUrl={paymentUrl || successState?.paymentUrl || ''}
         customerName={successState?.customerName ?? contact.customer_name}
         paymentMethod={successState?.paymentMethod ?? selectedMethod}
+        deliveryType={delivery.deliveryType}
         onDismiss={dismissSuccess}
       />
     );
@@ -328,9 +335,12 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
               <DeliveryStep
                 deliveryType={delivery.deliveryType}
                 address={delivery.address}
-                addressError={delivery.deliveryType === 'delivery' && !delivery.address.trim() ? 'La dirección es requerida' : undefined}
+                reference={delivery.reference}
+                latitude={delivery.latitude}
+                longitude={delivery.longitude}
+                addressError={delivery.deliveryType === 'delivery' && !delivery.address.trim() && delivery.latitude == null ? 'Marca tu ubicación en el mapa o escribe tu dirección' : undefined}
                 onDeliveryTypeChange={(type) => setDelivery({ ...delivery, deliveryType: type })}
-                onAddressChange={(addr) => setDelivery({ ...delivery, address: addr })}
+                onLocationChange={(v) => setDelivery({ ...delivery, address: v.address, reference: v.reference, latitude: v.latitude, longitude: v.longitude })}
                 onNext={handleDeliveryNext}
               />
             )}

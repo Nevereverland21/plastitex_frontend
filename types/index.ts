@@ -213,6 +213,9 @@ export interface CreateOrderPayload {
   email: string;
   phone: string;
   address?: string;
+  address_reference?: string;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
   order_type: OrderType;
   delivery_type: DeliveryType;
   delivery_cost?: string;

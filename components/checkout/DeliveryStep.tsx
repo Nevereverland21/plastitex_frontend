@@ -3,13 +3,17 @@
 import { useState } from 'react';
 import { MapPin, Truck, Clock, Phone, ChevronRight, Store } from 'lucide-react';
 import type { StoreLocation } from '@/types';
+import AddressMapPicker, { type AddressValue } from './AddressMapPicker';
 
 interface DeliveryStepProps {
   deliveryType: 'pickup' | 'delivery';
   address: string;
+  reference: string;
+  latitude: number | null;
+  longitude: number | null;
   addressError?: string;
   onDeliveryTypeChange: (type: 'pickup' | 'delivery') => void;
-  onAddressChange: (address: string) => void;
+  onLocationChange: (value: AddressValue) => void;
   onNext: () => void;
 }
 
@@ -28,14 +32,21 @@ const STORE_LOCATION: StoreLocation = {
 export default function DeliveryStep({
   deliveryType,
   address,
+  reference,
+  latitude,
+  longitude,
   addressError,
   onDeliveryTypeChange,
-  onAddressChange,
+  onLocationChange,
   onNext,
 }: DeliveryStepProps) {
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  const canContinue = deliveryType === 'pickup' || address.trim().length > 0;
+  // Delivery: basta con la dirección escrita O un punto marcado en el mapa.
+  const canContinue =
+    deliveryType === 'pickup' ||
+    address.trim().length > 0 ||
+    (latitude != null && longitude != null);
 
   const mapFallbackSrc = `https://maps.google.com/maps?q=${STORE_LOCATION.latitude},${STORE_LOCATION.longitude}&z=16&output=embed`;
 
@@ -183,35 +194,22 @@ export default function DeliveryStep({
         </div>
       )}
 
-      {/* Campo de dirección para delivery */}
+      {/* Dirección con mapa para delivery */}
       {deliveryType === 'delivery' && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <p className="text-xs text-amber-700 font-medium">
-              El costo de delivery se coordinará contigo por WhatsApp según tu ubicación.
+              Marca tu ubicación en el mapa. El costo de delivery se coordinará contigo
+              por WhatsApp según tu zona.
             </p>
           </div>
-          <div>
-            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">
-              Dirección de entrega
-            </label>
-            <div className="relative">
-              <MapPin size={15} className="absolute left-4 top-3.5 text-gray-400" />
-              <textarea
-                value={address}
-                onChange={(e) => onAddressChange(e.target.value)}
-                placeholder="Av. ejemplo 123, distrito, Lima"
-                rows={3}
-                className={`w-full pl-11 pr-4 py-3 bg-gray-50 border rounded-xl text-sm
-                           focus:outline-none focus:ring-2 focus:ring-brand-navy/15
-                           focus:border-brand-navy transition-all resize-none
-                           ${addressError ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
-              />
-            </div>
-            {addressError && (
-              <p className="text-red-500 text-xs mt-1">{addressError}</p>
-            )}
-          </div>
+          <AddressMapPicker
+            value={{ address, reference, latitude, longitude }}
+            onChange={onLocationChange}
+          />
+          {addressError && (
+            <p className="text-red-500 text-xs">{addressError}</p>
+          )}
         </div>
       )}
 
