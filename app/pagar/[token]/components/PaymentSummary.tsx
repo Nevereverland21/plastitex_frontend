@@ -62,14 +62,35 @@ export default function PaymentSummary({ link }: PaymentSummaryProps) {
         <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Desglose del pago</p>
 
         <div className="flex justify-between text-sm">
+          <span className="text-gray-600">Productos</span>
+          <span className="font-medium text-gray-900">{formatPrice(link.subtotal)}</span>
+        </div>
+
+        {parseFloat(link.delivery_cost) > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Costo de delivery</span>
+            <span className="font-medium text-gray-900">{formatPrice(link.delivery_cost)}</span>
+          </div>
+        )}
+
+        {parseFloat(link.extra_charges) > 0 && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Comisión / otros cargos</span>
+            <span className="font-medium text-gray-900">{formatPrice(link.extra_charges)}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between text-sm border-t border-gray-200 pt-2.5">
           <span className="text-gray-600">Total del pedido</span>
           <span className="font-medium text-gray-900">{formatPrice(link.total)}</span>
         </div>
 
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600">{conceptLabel}</span>
-          <span className="font-semibold text-gray-900">{formatPrice(link.amount_to_pay)}</span>
-        </div>
+        {!isFull && (
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">{conceptLabel}</span>
+            <span className="font-semibold text-gray-900">{formatPrice(link.amount_to_pay)}</span>
+          </div>
+        )}
 
         {parseFloat(remaining) > 0 && (
           <div className="flex justify-between text-sm">

@@ -254,6 +254,9 @@ export interface PaymentLinkItem {
 export interface PaymentLink {
   order_id: number;
   customer_name: string;
+  subtotal: string;
+  delivery_cost: string;
+  extra_charges: string;
   total: string;
   advance_amount: string;
   remaining_amount: string;
@@ -325,8 +328,13 @@ export interface PublicOrder {
   subtotal: string;
   total: string;
   delivery_cost: string;
+  extra_charges: string;
+  charges_confirmed: boolean;
   delivery_deadline: string | null;
   address: string;
+  address_reference: string;
+  delivery_latitude: string | null;
+  delivery_longitude: string | null;
   created_at: string;
   updated_at: string;
   items: PublicOrderItem[];

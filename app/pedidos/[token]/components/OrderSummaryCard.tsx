@@ -97,19 +97,45 @@ export default function OrderSummaryCard({ order }: OrderSummaryCardProps) {
         {/* Totales */}
         <div className="border-t border-gray-200 bg-gray-50/50 px-4 py-3 space-y-1">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Subtotal</span>
+            <span className="text-gray-600">Productos</span>
             <span className="font-medium text-gray-900">{formatPrice(order.subtotal)}</span>
           </div>
-          {parseFloat(order.delivery_cost) > 0 && (
+
+          {order.delivery_type === 'delivery' && !order.charges_confirmed ? (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Delivery</span>
-              <span className="font-medium text-gray-900">{formatPrice(order.delivery_cost)}</span>
+              <span className="text-gray-600">Costo de delivery</span>
+              <span className="font-medium text-amber-600">Por confirmar</span>
+            </div>
+          ) : (
+            parseFloat(order.delivery_cost) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Costo de delivery</span>
+                <span className="font-medium text-gray-900">{formatPrice(order.delivery_cost)}</span>
+              </div>
+            )
+          )}
+
+          {parseFloat(order.extra_charges) > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Comisión / otros cargos</span>
+              <span className="font-medium text-gray-900">{formatPrice(order.extra_charges)}</span>
             </div>
           )}
-          <div className="flex justify-between text-base font-bold">
+
+          <div className="flex justify-between text-base font-bold border-t border-gray-200 pt-1.5 mt-1">
             <span className="text-gray-900">Total</span>
-            <span className="text-[#1B2B5E]">{formatPrice(order.total)}</span>
+            <span className="text-[#1B2B5E]">
+              {order.delivery_type === 'delivery' && !order.charges_confirmed
+                ? `${formatPrice(order.total)} + envío`
+                : formatPrice(order.total)}
+            </span>
           </div>
+
+          {order.delivery_type === 'delivery' && !order.charges_confirmed && (
+            <p className="pt-1 text-[11px] text-amber-600">
+              El costo de envío se confirma por WhatsApp y se sumará al total.
+            </p>
+          )}
         </div>
       </div>
 
@@ -124,7 +150,12 @@ export default function OrderSummaryCard({ order }: OrderSummaryCardProps) {
           {order.delivery_type === 'delivery' && order.address && (
             <div className="flex items-start gap-2 text-sm text-gray-600">
               <MapPin size={16} className="mt-0.5 shrink-0 text-gray-400" />
-              {order.address}
+              <span>
+                {order.address}
+                {order.address_reference && (
+                  <span className="block text-xs text-gray-400">Ref: {order.address_reference}</span>
+                )}
+              </span>
             </div>
           )}
           {order.delivery_type === 'pickup' && (
