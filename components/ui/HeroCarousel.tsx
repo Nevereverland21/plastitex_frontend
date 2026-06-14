@@ -91,40 +91,37 @@ const SLIDES: HeroSlide[] = [
 
 const AUTOPLAY_MS = 7000;
 
-// Estilos por tema (fondo, colores de texto, scrim de legibilidad, etc.).
+// Estilos por tema (fondo de marca, colores de texto, glow, color de puntos).
 const THEMES: Record<Theme, {
   section: string; eyebrow: string; title: string; highlight: string;
-  subtitle: string; scrim: string; glow: string; dotTrack: string; dotColor: string;
+  subtitle: string; glow: string; dotTrack: string; dotColor: string;
 }> = {
   light: {
-    section: 'bg-gradient-to-br from-white via-brand-light to-[#e9edf7]',
+    section: 'bg-gradient-to-br from-white via-brand-light to-[#e7ecf7]',
     eyebrow: 'text-brand-orange',
     title: 'text-brand-navy',
     highlight: 'text-brand-orange',
     subtitle: 'text-gray-600',
-    scrim: 'from-white via-white/80 md:via-white/40',
-    glow: 'rgba(43,169,224,0.18)',
+    glow: 'rgba(43,169,224,0.16)',
     dotTrack: 'bg-brand-navy/15',
     dotColor: '#1B2B5E',
   },
   vibrant: {
-    section: 'bg-gradient-to-br from-[#15224d] via-[#21347a] to-[#2BA9E0]',
+    section: 'bg-gradient-to-br from-[#14224f] via-[#21347a] to-[#2BA9E0]',
     eyebrow: 'text-orange-300',
     title: 'text-white',
     highlight: 'text-orange-300',
     subtitle: 'text-white/85',
-    scrim: 'from-[#15224d] via-[#15224d]/80 md:via-[#15224d]/25',
-    glow: 'rgba(255,107,43,0.22)',
+    glow: 'rgba(255,107,43,0.20)',
     dotTrack: 'bg-white/30',
     dotColor: '#ffffff',
   },
   dark: {
-    section: 'bg-gradient-to-br from-[#0b1124] via-[#13204a] to-[#1B2B5E]',
+    section: 'bg-gradient-to-br from-[#0a1024] via-[#13204a] to-[#1f3675]',
     eyebrow: 'text-brand-sky',
     title: 'text-white',
     highlight: 'text-brand-sky',
     subtitle: 'text-white/80',
-    scrim: 'from-[#0b1124] via-[#0b1124]/80 md:via-[#0b1124]/20',
     glow: 'rgba(43,169,224,0.22)',
     dotTrack: 'bg-white/30',
     dotColor: '#ffffff',
@@ -153,14 +150,8 @@ export default function HeroCarousel() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  const next = useCallback(() => {
-    setCurrent((c) => (c + 1) % SLIDES.length);
-  }, []);
-
-  const prev = useCallback(() => {
-    setCurrent((c) => (c - 1 + SLIDES.length) % SLIDES.length);
-  }, []);
-
+  const next = useCallback(() => setCurrent((c) => (c + 1) % SLIDES.length), []);
+  const prev = useCallback(() => setCurrent((c) => (c - 1 + SLIDES.length) % SLIDES.length), []);
   const goTo = useCallback((i: number) => setCurrent(i), []);
 
   useEffect(() => {
@@ -169,19 +160,14 @@ export default function HeroCarousel() {
       return;
     }
     progressStartTime.current = Date.now();
-
     const tick = () => {
       const elapsed = Date.now() - progressStartTime.current;
       const pct = Math.min((elapsed / AUTOPLAY_MS) * 100, 100);
       setProgress(pct);
-      if (elapsed >= AUTOPLAY_MS) {
-        next();
-      } else {
-        rafRef.current = requestAnimationFrame(tick);
-      }
+      if (elapsed >= AUTOPLAY_MS) next();
+      else rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
@@ -196,12 +182,8 @@ export default function HeroCarousel() {
     return () => window.removeEventListener('keydown', handler);
   }, [next, prev]);
 
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const onTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
+  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const onTouchMove = (e: React.TouchEvent) => { touchEndX.current = e.touches[0].clientX; };
   const onTouchEnd = () => {
     const delta = touchStartX.current - touchEndX.current;
     if (Math.abs(delta) > 50) {
@@ -225,50 +207,46 @@ export default function HeroCarousel() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[480px] md:h-[520px]">
+      <div className="relative h-[600px] sm:h-[560px] lg:h-[640px]">
         {SLIDES.map((s, i) => (
           <div
             key={s.id}
-            className={`absolute inset-0 transition-all duration-700 ease-out ${
-              i === current
-                ? 'opacity-100 translate-x-0 pointer-events-auto'
-                : i < current
-                ? 'opacity-0 -translate-x-8 pointer-events-none'
-                : 'opacity-0 translate-x-8 pointer-events-none'
+            className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+              i === current ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={i !== current}
             role="group"
             aria-roledescription="slide"
             aria-label={`${i + 1} de ${SLIDES.length}`}
           >
-            <ProductSlide slide={s} active={i === current} />
+            <ProductSlide slide={s} active={i === current} priority={i === 0} />
           </div>
         ))}
 
+        {/* Flechas — solo desktop (en móvil se usa swipe + puntos) */}
         <button
           onClick={prev}
           aria-label="Slide anterior"
-          className="absolute left-3 md:left-5 top-1/2 -translate-y-1/2 z-20
-                     w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/90 backdrop-blur
-                     border border-white/40 shadow-md hover:bg-white hover:shadow-lg
-                     flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          className="hidden sm:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20
+                     w-11 h-11 rounded-full bg-white/90 backdrop-blur border border-white/40
+                     shadow-md hover:bg-white hover:shadow-lg items-center justify-center
+                     transition-all hover:scale-110 active:scale-95"
         >
           <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
         </button>
         <button
           onClick={next}
           aria-label="Slide siguiente"
-          className="absolute right-3 md:right-5 top-1/2 -translate-y-1/2 z-20
-                     w-10 h-10 md:w-11 md:h-11 rounded-full bg-brand-orange
-                     shadow-md hover:bg-orange-600 hover:shadow-lg
-                     flex items-center justify-center transition-all hover:scale-110 active:scale-95"
+          className="hidden sm:flex absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20
+                     w-11 h-11 rounded-full bg-brand-orange shadow-md hover:bg-orange-600
+                     hover:shadow-lg items-center justify-center transition-all hover:scale-110 active:scale-95"
         >
           <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
         </button>
 
+        {/* Puntos de navegación */}
         <div
-          className="absolute bottom-5 md:bottom-7 left-1/2 -translate-x-1/2 z-20
-                     flex items-center gap-2"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2"
           role="tablist"
           aria-label="Navegación del carrusel"
         >
@@ -297,29 +275,21 @@ export default function HeroCarousel() {
       <style jsx>{`
         @keyframes float-slow {
           0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
+          50% { transform: translateY(-12px); }
         }
         @keyframes stagger-in {
-          from { opacity: 0; transform: translateY(12px); }
+          from { opacity: 0; transform: translateY(14px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        :global(.anim-float) {
-          animation: float-slow 5s ease-in-out infinite;
-        }
-        :global(.anim-stagger > *) {
-          animation: stagger-in 0.6s ease-out both;
-        }
-        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.1s; }
-        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.2s; }
-        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.3s; }
-        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.4s; }
-        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.5s; }
-
+        :global(.anim-float) { animation: float-slow 5.5s ease-in-out infinite; }
+        :global(.anim-stagger > *) { animation: stagger-in 0.6s ease-out both; }
+        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.08s; }
+        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.16s; }
+        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.24s; }
+        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.32s; }
+        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.40s; }
         @media (prefers-reduced-motion: reduce) {
-          :global(.anim-float),
-          :global(.anim-stagger > *) {
-            animation: none;
-          }
+          :global(.anim-float), :global(.anim-stagger > *) { animation: none; }
         }
       `}</style>
     </section>
@@ -327,49 +297,36 @@ export default function HeroCarousel() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDE DE PRODUCTO — texto a la izquierda, producto real a la derecha
+// SLIDE DE PRODUCTO — 2 columnas en desktop (texto + producto juntos),
+// apilado y centrado en móvil. Fondo de marca a sangre completa, sin recuadros.
 // ─────────────────────────────────────────────────────────────────────────────
-function ProductSlide({ slide, active }: { slide: HeroSlide; active: boolean }) {
+function ProductSlide({ slide, active, priority }: { slide: HeroSlide; active: boolean; priority: boolean }) {
   const t = THEMES[slide.theme];
-  const dotHex = t.dotColor;
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${t.section}`}>
-      {/* Glow radial para dar profundidad detrás del producto */}
+      {/* Glow radial para profundidad detrás del producto */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(circle at 75% 42%, ${t.glow}, transparent 55%)` }}
+        style={{ background: `radial-gradient(circle at 72% 45%, ${t.glow}, transparent 60%)` }}
       />
       {/* Textura de puntos sutil */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.05]"
         style={{
-          backgroundImage: `radial-gradient(circle, ${dotHex} 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, ${t.dotColor} 1px, transparent 1px)`,
           backgroundSize: '34px 34px',
         }}
       />
 
-      {/* Producto */}
-      <div className="absolute right-0 top-0 h-full w-[62%] md:w-[52%] pointer-events-none">
-        <div className={`relative h-full w-full ${active ? 'anim-float' : ''}`}>
-          <Image
-            src={slide.image}
-            alt={slide.imageAlt}
-            fill
-            priority={active}
-            sizes="(max-width: 768px) 62vw, 52vw"
-            className="object-contain object-center md:object-right p-4 md:p-8 drop-shadow-2xl"
-          />
-        </div>
-      </div>
-
-      {/* Scrim para legibilidad del texto (más fuerte en móvil) */}
-      <div className={`absolute inset-0 pointer-events-none bg-gradient-to-r ${t.scrim} to-transparent`} />
-
-      {/* Contenido */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+      <div
+        className="relative h-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-10
+                   flex flex-col items-center justify-center gap-4 text-center
+                   md:grid md:grid-cols-2 md:items-center md:gap-10 md:text-left"
+      >
+        {/* Texto */}
         <div
-          className={`relative z-10 max-w-md md:max-w-lg ${active ? 'anim-stagger' : ''}`}
+          className={`order-2 md:order-1 w-full max-w-xl mx-auto md:mx-0 ${active ? 'anim-stagger' : ''}`}
           key={`${slide.id}-${active}`}
         >
           {slide.eyebrow && (
@@ -377,24 +334,38 @@ function ProductSlide({ slide, active }: { slide: HeroSlide; active: boolean }) 
               {slide.eyebrow}
             </p>
           )}
-          <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight mb-4 ${t.title}`}>
+          <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.06] tracking-tight mb-3 md:mb-4 ${t.title}`}>
             {slide.title}{' '}
             {slide.highlight && <span className={t.highlight}>{slide.highlight}</span>}
           </h1>
           {slide.subtitle && (
-            <p className={`text-base md:text-lg leading-relaxed mb-6 ${t.subtitle}`}>
+            <p className={`text-base md:text-lg leading-relaxed mb-5 md:mb-7 max-w-md mx-auto md:mx-0 ${t.subtitle}`}>
               {slide.subtitle}
             </p>
           )}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
             <CTAButton cta={slide.ctaPrimary} variant="primary" />
             <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
           </div>
           {slide.theme === 'light' && (
-            <div className="mt-6">
+            <div className="mt-6 flex justify-center md:justify-start">
               <TrustBar />
             </div>
           )}
+        </div>
+
+        {/* Producto */}
+        <div className="order-1 md:order-2 relative w-full h-[210px] sm:h-[280px] md:h-[86%]">
+          <div className={`relative h-full w-full ${active ? 'anim-float' : ''}`}>
+            <Image
+              src={slide.image}
+              alt={slide.imageAlt}
+              fill
+              priority={priority}
+              sizes="(max-width: 768px) 90vw, 46vw"
+              className="object-contain drop-shadow-2xl"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -417,7 +388,6 @@ function CTAButton({ cta, variant }: { cta?: CTA; variant: 'primary' | 'whatsapp
   };
 
   const isExternal = cta.href.startsWith('http');
-
   const content = (
     <>
       {cta.icon === 'whatsapp' && <MessageCircle size={18} strokeWidth={2.5} />}
@@ -450,7 +420,7 @@ function TrustBar() {
     { icon: <CreditCard size={14} strokeWidth={2.5} />, label: 'Pago seguro' },
   ];
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-700">
+    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-700 justify-center md:justify-start">
       {items.map((it) => (
         <span key={it.label} className="flex items-center gap-1.5">
           <span className="text-green-600">{it.icon}</span>
