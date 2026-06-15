@@ -61,7 +61,11 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
  */
 export default function AddressMapPicker({ value, onChange }: AddressMapPickerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // Leaflet se carga dinámicamente y sin @types/leaflet → el tipo del mapa/marker
+  // es necesariamente dinámico.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markerRef = useRef<any>(null);
   // Refs para que los callbacks de Leaflet siempre vean el valor/onChange actual
   // sin re-crear el mapa.
@@ -93,6 +97,7 @@ export default function AddressMapPicker({ value, onChange }: AddressMapPickerPr
       try {
         ensureLeafletCss();
         const mod = await import('leaflet');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const L: any = (mod as any).default ?? mod;
         if (cancelled || !containerRef.current || mapRef.current) return;
 
@@ -112,6 +117,7 @@ export default function AddressMapPicker({ value, onChange }: AddressMapPickerPr
           const ll = marker.getLatLng();
           applyPoint(ll.lat, ll.lng, true);
         });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         map.on('click', (e: any) => applyPoint(e.latlng.lat, e.latlng.lng, true));
 
         mapRef.current = map;

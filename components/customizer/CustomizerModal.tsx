@@ -3,8 +3,8 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import {
-  X, Upload, Wand2, Move, RotateCcw, RotateCw,
-  Trash2, CheckCircle, Loader2, AlertTriangle,
+  X, Upload, Move, RotateCcw, RotateCw,
+  Trash2, CheckCircle, AlertTriangle,
   ChevronRight, Sparkles, ImageIcon, Lock, Unlock,
   ZoomIn, ZoomOut, Maximize2, MoveHorizontal, MoveVertical,
 } from 'lucide-react';
@@ -31,8 +31,8 @@ export default function CustomizerModal({
     logoDataUrl, position,
     notes, setNotes,
     activeZone, zoom,
-    removingBg, bgRemoved, outOfBounds,
-    handleLogoUpload, handleRemoveBg, handleZoneChange,
+    bgRemoved, outOfBounds,
+    handleLogoUpload, handleZoneChange,
     setWidth, setHeight, setRotation, setOpacity, toggleLockRatio,
     centerLogo, resetTransform, removeLogo,
     handleZoomIn, handleZoomOut, handleZoomReset,
