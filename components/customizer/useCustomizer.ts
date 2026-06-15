@@ -175,7 +175,17 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
     img.crossOrigin = 'anonymous';
     img.onload  = () => { productImgRef.current = img; redraw(); };
     img.onerror = () => { productImgRef.current = null; redraw(); };
-    img.src = productImageUrl;
+    // Cache-bust estable para evitar el envenenamiento de caché CORS de S3:
+    // el navegador puede tener cacheada esta imagen SIN el header
+    // Access-Control-Allow-Origin (si se pidió como <img> normal, o si se cargó
+    // antes de configurar CORS en el bucket). Esa respuesta cacheada se reutiliza
+    // para esta petición crossOrigin del canvas y la rompe ("No
+    // 'Access-Control-Allow-Origin' header"). Un parámetro fijo separa la clave
+    // de caché de cualquier respuesta no-CORS previa, sin perder el cacheo
+    // (la URL es idéntica en cada carga). S3 ignora el parámetro y responde con
+    // los headers CORS correctos.
+    const sep = productImageUrl.includes('?') ? '&' : '?';
+    img.src = `${productImageUrl}${sep}canvas=1`;
   }, [productImageUrl, redraw]);
 
   // ── Cargar logo ───────────────────────────────────────────────────────────
