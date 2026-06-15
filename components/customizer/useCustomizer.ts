@@ -461,7 +461,14 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
       ctx.drawImage(logoImgRef.current, -width / 2, -height / 2, width, height);
       ctx.restore();
     }
-    return off.toDataURL('image/png');
+    try {
+      return off.toDataURL('image/png');
+    } catch {
+      // El canvas quedó "tainted" (imagen cross-origin sin CORS): no se puede
+      // exportar el mockup. No rompemos el guardado — la personalización se
+      // guarda igual (logo + notas) sin la vista previa compuesta.
+      return null;
+    }
   }, []);
 
   const buildResult = useCallback((): CustomizationData => ({
