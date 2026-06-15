@@ -301,6 +301,7 @@ export default function PurchasePanel({
           technique={activeSurcharge?.technique}
           logoNotes={quoteLogoNotes}
           estimatedTotal={quoteResult?.total ?? null}
+          customizationPreview={customization?.logoPreviewUrl ?? null}
           whatsappMessage={quoteWhatsappMessage}
           onClose={() => setShowQuoteForm(false)}
         />

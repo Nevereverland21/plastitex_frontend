@@ -240,6 +240,8 @@ export interface CreateQuotePayload {
   technique?: string;
   logo_notes?: string;
   message?: string;
+  /** Mockup (producto + logo) que armó el cliente, como data URL base64. */
+  customization_preview_data?: string;
 }
 
 // ─── PAYMENT LINK ─────────────────────────────────────────────────────────────

@@ -12,8 +12,37 @@ interface QuoteRequestModalProps {
   technique?: string;
   logoNotes?: string;
   estimatedTotal?: string | null;
+  /** Data URL del mockup (producto + logo) que armó el cliente, si personalizó. */
+  customizationPreview?: string | null;
   whatsappMessage: string;
   onClose: () => void;
+}
+
+/**
+ * Reduce un data URL a un JPEG pequeño (máx 720px, fondo blanco) para que la
+ * vista previa de personalización viaje liviana en el POST de la cotización.
+ * Si algo falla, devuelve el original.
+ */
+function shrinkPreview(dataUrl: string, max = 720): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      if (!ctx) { resolve(dataUrl); return; }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      try { resolve(c.toDataURL('image/jpeg', 0.82)); }
+      catch { resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
 }
 
 /**
@@ -26,6 +55,7 @@ export default function QuoteRequestModal({
   quantity,
   technique,
   logoNotes,
+  customizationPreview,
   whatsappMessage,
   onClose,
 }: QuoteRequestModalProps) {
@@ -44,6 +74,9 @@ export default function QuoteRequestModal({
     setStatus('loading');
     setError(null);
     try {
+      const previewData = customizationPreview
+        ? await shrinkPreview(customizationPreview)
+        : undefined;
       await createQuote({
         customer_name: form.customer_name.trim(),
         email: form.email.trim(),
@@ -54,6 +87,7 @@ export default function QuoteRequestModal({
         technique: technique || undefined,
         logo_notes: logoNotes || undefined,
         message: form.message.trim() || undefined,
+        customization_preview_data: previewData,
       });
       setStatus('done');
       // Abrir WhatsApp para coordinar (el cliente adjunta su logo ahí).
@@ -108,6 +142,20 @@ export default function QuoteRequestModal({
               <strong className="text-brand-navy">{product.name}</strong> · {quantity} uds
               {technique ? ` · ${technique.toUpperCase()}` : ''}
             </div>
+
+            {customizationPreview && (
+              <div className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-white p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={customizationPreview}
+                  alt="Tu diseño"
+                  className="w-12 h-12 object-contain rounded-lg border border-gray-100 flex-shrink-0"
+                />
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Adjuntaremos tu diseño a la cotización para que el asesor lo vea.
+                </p>
+              </div>
+            )}
 
             {([
               { k: 'customer_name', label: 'Nombre completo', type: 'text', required: true },
