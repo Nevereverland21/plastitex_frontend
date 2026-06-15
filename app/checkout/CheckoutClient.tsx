@@ -7,7 +7,7 @@ import Link from 'next/link';
 import type { CartItem, StoreLocation } from '@/types';
 import type { PaymentMethod } from '@/types';
 import { getStoreLocations } from '@/lib/api';
-import { useCartStore, getItemUnitPrice } from '@/store/cartStore';
+import { useCartStore, getItemUnitPrice, itemExtrasCost } from '@/store/cartStore';
 import { useCheckoutForm } from '@/hooks/checkout/useCheckoutForm';
 import { useCreateOrder } from '@/hooks/checkout/useCreateOrder';
 import { usePayment } from '@/hooks/checkout/usePayment';
@@ -179,6 +179,9 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
       quantity: i.quantity,
       unit_price: i.unit_price ?? i.unit_price_override ?? String(i.product.base_price),
       customization_notes: i.customization_notes || undefined,
+      extra_ids: i.selected_extras && i.selected_extras.length > 0
+        ? i.selected_extras.filter((e) => !e.is_quote_required).map((e) => e.id)
+        : undefined,
     }));
 
     const isDelivery = delivery.deliveryType === 'delivery';
@@ -214,10 +217,10 @@ function CheckoutContent({ buyNowItem }: CheckoutClientProps) {
             name: i.product.name,
             quantity: i.quantity,
             unitPrice: price,
-            subtotal: price * i.quantity,
+            subtotal: price * i.quantity + itemExtrasCost(i),
           };
         }),
-        total: items.reduce((acc, i) => acc + getItemUnitPrice(i) * i.quantity, 0),
+        total: items.reduce((acc, i) => acc + getItemUnitPrice(i) * i.quantity + itemExtrasCost(i), 0),
         deliveryType: delivery.deliveryType,
         address: delivery.address,
       };

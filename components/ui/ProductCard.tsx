@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingBag, Building2, Package, Sparkles, ArrowRight, Users } from 'lucide-react';
-import type { Product, ProductColor } from '@/types';
+import type { Product } from '@/types';
 import { formatPrice, formatQuantity } from '@/lib/formatters';
 
 interface ProductCardProps {
@@ -12,12 +12,10 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const defaultColor =
-    product.colors?.find((c) => c.is_default) ?? product.colors?.[0] ?? null;
-  const [activeColor, setActiveColor] = useState<ProductColor | null>(defaultColor);
+  // El selector de colores está OCULTO por ahora (flujo de colores no terminado).
   const [activeTierIndex, setActiveTierIndex] = useState<number | null>(null);
 
-  const displayImage = activeColor?.image ?? product.image;
+  const displayImage = product.image;
 
   const isRetail = product.catalog_type === 'retail' || product.catalog_type === 'both';
   const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
@@ -180,42 +178,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           ) : null}
         </div>
 
-        {/* Colores + precio */}
+        {/* Precio */}
         <div className="mt-auto pt-2.5 border-t border-gray-50 flex items-end justify-between gap-2">
 
-          {/* Selector de colores */}
-          <div className="flex-1 min-w-0">
-            {product.colors && product.colors.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {product.colors.slice(0, 5).map((color) => (
-                  <button
-                    key={color.id}
-                    onMouseEnter={() => setActiveColor(color)}
-                    onClick={(e) => { e.preventDefault(); setActiveColor(color); }}
-                    className={`w-4 h-4 rounded-full border-2 transition-all duration-150
-                                ${activeColor?.id === color.id
-                                  ? 'border-brand-navy scale-125 shadow-sm'
-                                  : 'border-white shadow hover:scale-110'
-                                }`}
-                    style={{ backgroundColor: color.hex_code }}
-                    title={color.name}
-                  />
-                ))}
-                {product.colors.length > 5 && (
-                  <span className="text-[10px] text-gray-400 font-semibold">
-                    +{product.colors.length - 5}
-                  </span>
-                )}
-                {activeColor && (
-                  <span className="text-[10px] text-gray-500 font-medium ml-0.5 truncate">
-                    {activeColor.name}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span className="text-[10px] text-gray-300 font-medium">Color único</span>
-            )}
-          </div>
+          {/* Espaciador (selector de colores oculto por ahora) */}
+          <div className="flex-1 min-w-0" />
 
           {/* Precio dinámico */}
           <div className="text-right shrink-0">

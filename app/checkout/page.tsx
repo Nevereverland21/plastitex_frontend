@@ -9,11 +9,12 @@ interface PageProps {
     qty?: string;
     unit_price?: string;
     price?: string;
+    extras?: string;
   }>;
 }
 
 async function getCheckoutData(searchParams: Awaited<PageProps['searchParams']>): Promise<CartItem | undefined> {
-  const { buy_now, qty, unit_price, price } = searchParams;
+  const { buy_now, qty, unit_price, price, extras } = searchParams;
   if (!buy_now || !qty) return undefined;
 
   try {
@@ -21,6 +22,16 @@ async function getCheckoutData(searchParams: Awaited<PageProps['searchParams']>)
     if (!product) return undefined;
     const quantity = Math.max(1, parseInt(qty, 10));
     const finalUnitPrice = unit_price ?? price ?? String(product.base_price);
+
+    // Extras elegidos en la página del producto (?extras=1,2). Se reconstruyen
+    // desde el catálogo (solo activos y no-cotización) para llevarlos al pedido.
+    const extraIds = (extras ?? '')
+      .split(',')
+      .map((x) => parseInt(x, 10))
+      .filter((n) => !Number.isNaN(n));
+    const selectedExtras = (product.extras ?? []).filter(
+      (e) => extraIds.includes(e.id) && !e.is_quote_required,
+    );
 
     return {
       product: {
@@ -47,6 +58,7 @@ async function getCheckoutData(searchParams: Awaited<PageProps['searchParams']>)
       quantity,
       unit_price: finalUnitPrice,
       unit_price_override: price ?? undefined,
+      selected_extras: selectedExtras.length > 0 ? selectedExtras : undefined,
     } satisfies CartItem;
   } catch {
     return undefined;

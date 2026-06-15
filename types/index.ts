@@ -29,6 +29,7 @@ export interface ProductExtra {
   id: number;
   name: string;
   extra_type: ExtraType;
+  extra_type_display?: string;
   unit_cost: string;
   is_quote_required: boolean;
   included_from_quantity: number | null;
@@ -225,6 +226,9 @@ export interface CreateOrderPayload {
     product: number;
     quantity: number;
     unit_price: string;
+    customization_notes?: string;
+    /** IDs de extras (no-cotización) elegidos; el backend recalcula su costo. */
+    extra_ids?: number[];
   }[];
 }
 

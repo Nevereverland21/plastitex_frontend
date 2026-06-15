@@ -9,8 +9,10 @@ interface StickyTotalProps {
   unitPrice: number | null;
   quantity: number;
   logoExtra: number;
+  extrasCost?: number;
+  extraIds?: number[];
   loading: boolean;
-  ctaState: 'disabled' | 'cart' | 'quote';
+  ctaState: 'disabled' | 'cart' | 'quote' | 'out_of_stock';
   addedToCart: boolean;
   productSlug: string;
   onAddToCart: () => void;
@@ -21,6 +23,8 @@ export default function StickyTotal({
   unitPrice,
   quantity,
   logoExtra,
+  extrasCost = 0,
+  extraIds = [],
   loading,
   ctaState,
   addedToCart,
@@ -34,7 +38,11 @@ export default function StickyTotal({
 
   const displayUnit  = loading ? lastUnitPrice.current : unitPrice;
   const subtotal     = displayUnit !== null ? displayUnit * quantity : null;
-  const grandTotal   = subtotal !== null ? subtotal + logoExtra : null;
+  const grandTotal   = subtotal !== null ? subtotal + logoExtra + extrasCost : null;
+
+  // Extras seleccionados viajan a "comprar ahora" como ?extras=1,2 para que el
+  // backend recalcule su costo (autoritativo) y los registre en el pedido.
+  const extrasParam = extraIds.length > 0 ? `&extras=${extraIds.join(',')}` : '';
 
   // Actualizar refs cuando hay datos reales
   if (!loading && unitPrice !== null) {
@@ -64,6 +72,12 @@ export default function StickyTotal({
                 <span className="text-xs font-semibold text-brand-orange">≈ +S/ {formatPrice(logoExtra)}</span>
               </div>
             )}
+            {extrasCost > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-400">Extras</span>
+                <span className="text-xs font-semibold text-brand-navy">+S/ {formatPrice(extrasCost)}</span>
+              </div>
+            )}
             <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
               <span className="text-sm font-bold text-brand-navy">Total estimado</span>
               <span className={`text-xl font-black text-brand-navy transition-opacity duration-200
@@ -88,11 +102,26 @@ export default function StickyTotal({
         </button>
       )}
 
+      {ctaState === 'out_of_stock' && (
+        <div className="space-y-2">
+          <button disabled
+            className="w-full py-3 rounded-xl bg-gray-100 text-gray-400 text-sm font-bold cursor-not-allowed">
+            Sin stock disponible
+          </button>
+          <button
+            onClick={onRequestQuote}
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold
+                       text-gray-400 hover:text-[#25D366] transition-colors duration-200">
+            <MessageCircle size={13} /> Consultar disponibilidad por WhatsApp
+          </button>
+        </div>
+      )}
+
       {ctaState === 'cart' && (
         <div className="space-y-2">
           {/* Comprar ahora — acción primaria */}
           <Link
-            href={`/checkout?buy_now=${productSlug}&qty=${quantity}&unit_price=${unitPrice !== null ? unitPrice.toFixed(2) : ''}&price=${unitPrice !== null ? unitPrice.toFixed(2) : ''}`}
+            href={`/checkout?buy_now=${productSlug}&qty=${quantity}&unit_price=${unitPrice !== null ? unitPrice.toFixed(2) : ''}&price=${unitPrice !== null ? unitPrice.toFixed(2) : ''}${extrasParam}`}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm
                       bg-brand-orange text-white hover:bg-brand-orange/90
                       transition-all duration-200 shadow-md shadow-brand-orange/20

@@ -45,13 +45,20 @@ export default function PricingTab({
   const isRetail   = !hasTiers;
   const hasDesc    = !!product.description;
 
+  // Precio unitario para la cantidad actual: el del cotizador cuando está
+  // disponible (autoritativo), si no el de entrada (mínimo). Así a 1 unidad se
+  // muestra el precio base y al subir la cantidad baja según el rango.
+  const headlineUnit = quoteResult
+    ? parseFloat(quoteResult.unit_price)
+    : parseFloat(String(product.starting_price));
+
   return (
     <div className="space-y-3 py-1">
 
-      {/* Precio base */}
+      {/* Precio unitario para la cantidad actual */}
       <div className="flex items-baseline gap-1.5">
         <span className="text-3xl font-black text-brand-navy">
-          S/ {formatPrice(product.starting_price)}
+          S/ {formatPrice(headlineUnit)}
         </span>
         <span className="text-xs text-gray-400">/ud</span>
         {minUnits > 1 && (

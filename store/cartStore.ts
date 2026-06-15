@@ -32,6 +32,21 @@ export function getItemUnitPrice(item: CartItem): number {
 }
 
 /**
+ * Costo de los extras (complementos) elegidos para un ítem. Espeja el cálculo
+ * autoritativo del backend: cada extra que NO requiere cotización suma
+ * unit_cost × cantidad, salvo que sea gratis a partir de cierta cantidad. Los
+ * extras que requieren cotización no se cobran aquí (van por WhatsApp).
+ */
+export function itemExtrasCost(item: CartItem): number {
+  if (!item.selected_extras) return 0;
+  return item.selected_extras.reduce((sum, e) => {
+    if (e.is_quote_required) return sum;
+    if (e.included_from_quantity && item.quantity >= e.included_from_quantity) return sum;
+    return sum + parseFloat(e.unit_cost) * item.quantity;
+  }, 0);
+}
+
+/**
  * Precio unitario para una cantidad, según el escalonado por tiers del
  * producto. Espeja la lógica autoritativa del backend (`Product.unit_price_for`):
  * toma el tier con mayor `min_quantity <= cantidad`, o cae a `base_price`.
@@ -61,7 +76,9 @@ export const useCartStore = create<CartStore>()(
         // Respeta el mínimo de compra del producto.
         const addQty = Math.max(options.quantity ?? 1, product.min_units ?? 1);
 
-        if (currentQty >= product.stock && product.stock > 0) return;
+        // Sin stock no se agrega (la compra directa descuenta stock en el backend).
+        if (product.stock <= 0) return;
+        if (currentQty >= product.stock) return;
 
         const explicitPrice = options.unit_price ?? options.unit_price_override ?? undefined;
 
@@ -129,7 +146,7 @@ export const useCartStore = create<CartStore>()(
       totalPrice: () =>
         get().items.reduce((acc, i) => {
           const price = getItemUnitPrice(i);
-          return acc + price * i.quantity;
+          return acc + price * i.quantity + itemExtrasCost(i);
         }, 0),
     }),
     { name: 'plastitex-cart' }

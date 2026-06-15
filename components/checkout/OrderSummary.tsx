@@ -4,7 +4,7 @@ import { ShoppingBag, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 import type { CartItem } from '@/types';
 import { formatPrice } from '@/lib/formatters';
-import { getItemUnitPrice } from '@/store/cartStore';
+import { getItemUnitPrice, itemExtrasCost } from '@/store/cartStore';
 
 interface OrderSummaryProps {
   items: CartItem[];
@@ -12,7 +12,10 @@ interface OrderSummaryProps {
 }
 
 export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
-  const subtotal = items.reduce((acc, i) => acc + getItemUnitPrice(i) * i.quantity, 0);
+  const subtotal = items.reduce(
+    (acc, i) => acc + getItemUnitPrice(i) * i.quantity + itemExtrasCost(i),
+    0,
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -30,8 +33,9 @@ export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
       {/* Items */}
       <div className="divide-y divide-gray-50">
         {items.map((item) => {
-          const { product, quantity, customization_notes } = item;
+          const { product, quantity, customization_notes, selected_extras } = item;
           const price = getItemUnitPrice(item);
+          const extrasCost = itemExtrasCost(item);
           return (
             <div key={product.id} className="flex gap-3 items-center px-5 py-3.5">
               {/* Imagen */}
@@ -53,11 +57,16 @@ export default function OrderSummary({ items, isBuyNow }: OrderSummaryProps) {
                     <Sparkles size={10} className="flex-shrink-0" /> {customization_notes}
                   </p>
                 )}
+                {selected_extras && selected_extras.length > 0 && (
+                  <p className="text-[10px] text-gray-400 mt-0.5 truncate">
+                    + {selected_extras.map((e) => e.name).join(', ')}
+                  </p>
+                )}
               </div>
 
               {/* Subtotal */}
               <p className="text-xs font-bold text-brand-navy shrink-0">
-                S/ {formatPrice(price * quantity)}
+                S/ {formatPrice(price * quantity + extrasCost)}
               </p>
             </div>
           );

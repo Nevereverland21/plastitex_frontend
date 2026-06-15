@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { ShoppingBag, Building2, Sparkles, Share2 } from 'lucide-react';
-import type { ProductDetail, LogoSurcharge, QuoteResponse } from '@/types';
+import type { ProductDetail, LogoSurcharge, QuoteResponse, ProductExtra } from '@/types';
 import type { CustomizationData } from '@/types/customizer';
 import { getProductQuote } from '@/lib/api';
 import { useCartStore } from '@/store/cartStore';
 import PricingTab from './PricingTab';
+import ExtrasSection from './ExtrasSection';
 import CustomizerTab from './CustomizerTab';
 import StickyTotal from './StickyTotal';
 import QuoteRequestModal from './QuoteRequestModal';
@@ -56,6 +57,29 @@ export default function PurchasePanel({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showQuoteForm, setShowQuoteForm] = useState(false);
 
+  // ── Extras (complementos) ─────────────────────────────────────────────────
+  const activeExtras = product.extras ?? [];
+  const [selectedExtras, setSelectedExtras] = useState<ProductExtra[]>([]);
+  const toggleExtra = useCallback((extra: ProductExtra) => {
+    setSelectedExtras((prev) =>
+      prev.some((e) => e.id === extra.id)
+        ? prev.filter((e) => e.id !== extra.id)
+        : [...prev, extra]
+    );
+  }, []);
+  // Un extra que requiere cotización fuerza el flujo de cotización.
+  const quoteRequiredSelected = selectedExtras.some((e) => e.is_quote_required);
+  // Costo de extras cobrables (espeja el cálculo autoritativo del backend).
+  const extrasCost = selectedExtras.reduce((sum, e) => {
+    if (e.is_quote_required) return sum;
+    if (e.included_from_quantity && quantity >= e.included_from_quantity) return sum;
+    return sum + parseFloat(e.unit_cost) * quantity;
+  }, 0);
+  const buyableExtras   = selectedExtras.filter((e) => !e.is_quote_required);
+  const buyableExtraIds = buyableExtras.map((e) => e.id);
+  // Clave estable de los ids para las dependencias del efecto del cotizador.
+  const buyableExtraKey = buyableExtraIds.join(',');
+
   // ── Canal efectivo y modo mayorista ──────────────────────────────────────
   const wholesaleThreshold = product.wholesale_threshold ?? 100;
   // Mayorista si el producto ya es mayorista, o si la cantidad alcanza el umbral.
@@ -84,9 +108,12 @@ export default function PurchasePanel({
   }, [effectiveChannel, activeSurcharge?.id]);
 
   // ── CTA state ────────────────────────────────────────────────────────────
+  // El stock solo bloquea la COMPRA DIRECTA (que descuenta stock en el backend);
+  // la cotización no depende del stock.
   const ctaState = (() => {
     if (quantity < minUnits) return 'disabled' as const;
-    if (quantity >= threshold || !!activeSurcharge) return 'quote' as const;
+    if (quantity >= threshold || !!activeSurcharge || quoteRequiredSelected) return 'quote' as const;
+    if (product.stock <= 0 || quantity > product.stock) return 'out_of_stock' as const;
     return 'cart' as const;
   })();
 
@@ -104,7 +131,13 @@ export default function PurchasePanel({
       setLoading(true);
       setError(null);
       try {
-        const result = await getProductQuote(product.slug, { quantity });
+        // Mandamos los extras cobrables: el backend recalcula su costo y el total
+        // de forma autoritativa, así el total que ve el cliente coincide exacto
+        // con el que se cobrará en el pedido.
+        const result = await getProductQuote(product.slug, {
+          quantity,
+          extra_ids: buyableExtraIds,
+        });
         setQuoteResult(result);
       } catch (e: unknown) {
         setError((e as { response?: { data?: { error?: string } } }).response?.data?.error ?? 'Error al calcular precio');
@@ -115,7 +148,8 @@ export default function PurchasePanel({
     }, 380);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [quantity, product.slug, minUnits, threshold]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quantity, product.slug, minUnits, threshold, buyableExtraKey]);
 
   // ── Precios para el total sticky ─────────────────────────────────────────
   const unitPrice = quoteResult
@@ -127,6 +161,12 @@ export default function PurchasePanel({
   const logoExtra = activeSurcharge
     ? activeSurcharge.price_extra * quantity
     : 0;
+
+  // Costo de extras a mostrar: el del cotizador (autoritativo) cuando ya
+  // respondió; mientras tanto, el cálculo local optimista para feedback inmediato.
+  const effectiveExtrasCost = quoteResult
+    ? parseFloat(quoteResult.extras_cost)
+    : extrasCost;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleAddToCart = useCallback(() => {
@@ -141,15 +181,19 @@ export default function PurchasePanel({
     if (customization?.customizationNotes) {
       notes.push(customization.customizationNotes);
     }
+    if (buyableExtras.length > 0) {
+      notes.push(`Extras: ${buyableExtras.map((e) => e.name).join(', ')}`);
+    }
 
     addItem(product, {
       quantity,
       unit_price_override: quoteResult?.unit_price ?? String(product.base_price),
+      selected_extras: buyableExtras.length > 0 ? buyableExtras : undefined,
       customization_notes: notes.join(' | ') || undefined,
     });
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
-  }, [addItem, product, quantity, quoteResult, activeSurcharge, customization]);
+  }, [addItem, product, quantity, quoteResult, activeSurcharge, customization, buyableExtras]);
 
   // Notas de personalización para la cotización (técnica + notas del cliente).
   const quoteLogoNotes = (() => {
@@ -160,6 +204,10 @@ export default function PurchasePanel({
       }`);
     }
     if (customization?.customizationNotes) notes.push(customization.customizationNotes);
+    if (selectedExtras.length > 0) {
+      notes.push(`Extras: ${selectedExtras.map((e) =>
+        e.is_quote_required ? `${e.name} (a cotizar)` : e.name).join(', ')}`);
+    }
     return notes.join(' | ');
   })();
 
@@ -259,14 +307,27 @@ export default function PurchasePanel({
       <div className="flex-1 overflow-y-auto min-h-0 py-2
                       scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
         {activeTab === 'comprar' && (
-          <PricingTab
-            product={product}
-            quantity={quantity}
-            quoteResult={quoteResult}
-            loading={loading}
-            error={error}
-            onQuantityChange={setQuantity}
-          />
+          <div className="space-y-3">
+            <PricingTab
+              product={product}
+              quantity={quantity}
+              quoteResult={quoteResult}
+              loading={loading}
+              error={error}
+              onQuantityChange={setQuantity}
+            />
+            <ExtrasSection
+              extras={activeExtras}
+              selectedIds={selectedExtras.map((e) => e.id)}
+              quantity={quantity}
+              onToggle={toggleExtra}
+            />
+            {quoteRequiredSelected && (
+              <p className="text-[11px] text-brand-orange bg-brand-orange/5 border border-brand-orange/20 rounded-xl px-3 py-2">
+                Un complemento seleccionado requiere cotización: cierra el pedido por WhatsApp y un asesor te confirmará el precio final.
+              </p>
+            )}
+          </div>
         )}
         {activeTab === 'personalizar' && canCustomize && (
           <CustomizerTab
@@ -286,6 +347,8 @@ export default function PurchasePanel({
         unitPrice={unitPrice}
         quantity={quantity}
         logoExtra={logoExtra}
+        extrasCost={effectiveExtrasCost}
+        extraIds={buyableExtraIds}
         loading={loading}
         ctaState={ctaState}
         addedToCart={addedToCart}

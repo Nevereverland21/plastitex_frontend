@@ -2,7 +2,7 @@
 
 import { X, Trash2, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
-import { useCartStore } from '@/store/cartStore';
+import { useCartStore, getItemUnitPrice, itemExtrasCost } from '@/store/cartStore';
 import Link from 'next/link';
 
 export default function CartSidebar() {
@@ -46,8 +46,10 @@ export default function CartSidebar() {
               <p className="text-sm">Tu carrito está vacío</p>
             </div>
           ) : (
-            items.map(({ product, quantity, unit_price_override, selected_extras }) => {
-              const price = parseFloat(unit_price_override ?? product.base_price);
+            items.map((item) => {
+              const { product, quantity, selected_extras } = item;
+              const price = getItemUnitPrice(item);
+              const lineTotal = price * quantity + itemExtrasCost(item);
               return (
                 <div key={product.id}
                   className="flex gap-4 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -105,7 +107,7 @@ export default function CartSidebar() {
                       <Trash2 size={16} />
                     </button>
                     <p className="text-sm font-bold text-brand-navy">
-                      S/ {(price * quantity).toFixed(2)}
+                      S/ {lineTotal.toFixed(2)}
                     </p>
                   </div>
                 </div>
