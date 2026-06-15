@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getProductBySlugServer } from '@/lib/api';
+import { getProductBySlugServer, cacheOptions } from '@/lib/api';
 import type { LogoSurcharge } from '@/types';
 import ProductPageClient from './ProductPageClient';
 
@@ -12,9 +12,9 @@ export const revalidate = 60;
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 async function getLogoSurchargesServer(): Promise<LogoSurcharge[]> {
-  const res = await fetch(`${BASE_URL}/api/logo-surcharges/`, {
-    next: { tags: ['logo-surcharges'], revalidate: 3600 },
-  });
+  // Tag 'logo-surcharges' → lo invalida la signal de Django al guardar una
+  // técnica. El revalidate corto es solo respaldo de auto-sanado.
+  const res = await fetch(`${BASE_URL}/api/logo-surcharges/`, cacheOptions(['logo-surcharges'], 60));
   if (!res.ok) return [];
   const data = await res.json();
   return Array.isArray(data) ? data : [];

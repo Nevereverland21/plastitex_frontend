@@ -58,9 +58,14 @@ export function unwrapList<T>(data: T[] | PaginatedResponse<T>): T[] {
 
 const isDev = process.env.NODE_ENV === 'development';
 
-function cacheOptions(tags: string[]): RequestInit {
+// Caché de fetch en server components. La fuente de verdad de la frescura es la
+// invalidación por TAG (las signals de Django llaman a /api/revalidate al
+// guardar). El `revalidate` es solo un respaldo de auto-sanado por si el webhook
+// falla: lo mantenemos corto (5 min) para que ningún dato (precio/stock/recargo)
+// quede viejo mucho tiempo. En dev siempre se pide fresco.
+export function cacheOptions(tags: string[], revalidate = 300): RequestInit {
   if (isDev) return { cache: 'no-store' };
-  return { next: { tags, revalidate: 3600 } };
+  return { next: { tags, revalidate } };
 }
 
 // ─── Instancia axios (Client Components) ──────────────────────────────────────
