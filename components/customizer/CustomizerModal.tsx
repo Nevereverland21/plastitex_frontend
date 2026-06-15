@@ -262,7 +262,8 @@ export default function CustomizerModal({
                       </button>
                     </div>
                   </div>
-
+                  
+                  {/* 
                   {!bgRemoved ? (
                     <button onClick={handleRemoveBg} disabled={removingBg}
                       className="w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-2xl
@@ -279,6 +280,8 @@ export default function CustomizerModal({
                       <p className="text-sm font-semibold text-green-700">Fondo eliminado correctamente</p>
                     </div>
                   )}
+                  */
+                  }
                 </div>
               )}
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
