@@ -11,6 +11,7 @@ import {
   Printer, FlaskConical,
   Truck, HardHat, Settings2,
 } from 'lucide-react';
+import { WHATSAPP } from '@/lib/config';
 
 // ─── Imágenes placeholder (reemplazar con fotos reales del cliente) ───────────
 const HERO_IMAGE = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80';
@@ -164,7 +165,7 @@ export default function NosotrosPage() {
                 <ChevronRight size={16} strokeWidth={2.5} />
               </Link>
               <a
-                href="https://wa.me/51959388698"
+                href={WHATSAPP.baseUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20
@@ -371,7 +372,7 @@ export default function NosotrosPage() {
                 <ChevronRight size={16} strokeWidth={2.5} />
               </Link>
               <a
-                href="https://wa.me/51959388698?text=Hola%20Plastitex%2C%20me%20gustar%C3%ADa%20cotizar%20un%20pedido"
+                href={WHATSAPP.link('Hola Plastitex, me gustaría cotizar un pedido')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30

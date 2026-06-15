@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { MessageCircle, Mail, MapPin, Phone, Heart } from 'lucide-react';
 import { FaFacebookF, FaInstagram, FaTiktok, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
+import { WHATSAPP } from '@/lib/config';
 
 const SOCIAL = {
   facebook:  'https://www.facebook.com/multiindustriasplastitex?locale=es_LA',
@@ -11,7 +12,7 @@ const SOCIAL = {
   youtube:   'https://www.youtube.com/@plastitex',
 };
 
-const WHATSAPP_URL = 'https://wa.me/51999999999';
+const WHATSAPP_URL = WHATSAPP.baseUrl;
 
 export default function Footer() {
   return (
@@ -92,10 +93,7 @@ export default function Footer() {
                 >
                   <MessageCircle size={15} strokeWidth={2.5} className="flex-shrink-0 mt-0.5" />
                   <div>
-                    <span className="block">959 388 698</span>
-                    <span className="block text-white/40 group-hover:text-green-300 text-xs">
-                      999 999 999
-                    </span>
+                    <span className="block">{WHATSAPP.display}</span>
                   </div>
                 </a>
               </li>

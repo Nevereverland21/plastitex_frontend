@@ -22,10 +22,13 @@ export const WHATSAPP = {
     `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
 };
 
+// Número local (sin código de país) derivado del número de WhatsApp
+const localPhone = phone.replace(/^51/, '');
+
 export const COMPANY = {
   name: 'Plastitex',
-  phone: '959388698',
-  phoneDisplay: '959 388 698',
+  phone: localPhone,
+  phoneDisplay: WHATSAPP.display,
   phoneSecondary: '994 157 627',
   email: 'ventascorporativas@plastitex.pe',
   address: 'Jr. Áncash 919, Lima 15001',

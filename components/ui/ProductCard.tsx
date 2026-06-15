@@ -23,6 +23,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
   const hasTiers = product.pricing_tiers && product.pricing_tiers.length > 0;
 
+  // El stock solo aplica a la venta minorista: los productos solo-mayoristas se
+  // cotizan y no descuentan stock, así que nunca se marcan como "Agotado".
+  const isOutOfStock = isRetail && product.stock === 0;
+  const isLowStock = isRetail && product.stock > 0 && product.stock <= 5;
+
   const activeTier =
     activeTierIndex !== null ? product.pricing_tiers?.[activeTierIndex] : null;
 
@@ -51,6 +56,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           {product.featured && (
             <span className="bg-brand-orange text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
               ★ Destacado
+            </span>
+          )}
+          {isLowStock && (
+            <span className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm flex items-center gap-1">
+              Últimas {product.stock} uds
             </span>
           )}
           <div className="flex gap-1 flex-wrap">
@@ -86,11 +96,22 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-contain p-6 transition-all duration-500 group-hover:scale-[1.08]"
+            className={`object-contain p-6 transition-all duration-500 group-hover:scale-[1.08] ${
+              isOutOfStock ? 'opacity-40 grayscale' : ''
+            }`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-200">
             <Package size={52} strokeWidth={1} />
+          </div>
+        )}
+
+        {/* Overlay "Agotado" — minorista sin stock (sigue cotizable como mayorista) */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/30">
+            <span className="bg-rose-600 text-white text-xs font-black uppercase tracking-wider px-4 py-1.5 rounded-full shadow-md">
+              Agotado
+            </span>
           </div>
         )}
 
