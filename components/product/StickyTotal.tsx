@@ -60,8 +60,8 @@ export default function StickyTotal({
             </div>
             {logoExtra > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-xs text-gray-400">Logo incluido</span>
-                <span className="text-xs font-semibold text-brand-orange">+S/ {formatPrice(logoExtra)}</span>
+                <span className="text-xs text-gray-400">Logo (referencial)</span>
+                <span className="text-xs font-semibold text-brand-orange">≈ +S/ {formatPrice(logoExtra)}</span>
               </div>
             )}
             <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">

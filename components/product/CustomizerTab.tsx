@@ -1,6 +1,7 @@
 'use client';
 
-import { Lock, Sparkles, ChevronRight, CheckCircle, Info } from 'lucide-react';
+import { Lock, Sparkles, ChevronRight, CheckCircle, Info, Brush, Printer, Shirt, Wand2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { LogoSurcharge } from '@/types';
 
 interface CustomizerTabProps {
@@ -33,11 +34,12 @@ const TECH_DESC: Record<string, string> = {
   grabado:    'Grabado permanente en metal.',
 };
 
-const TECH_ICON: Record<string, string> = {
-  serigrafia: '🎨',
-  dtf:        '🖨️',
-  bordado:    '🧵',
-  grabado:    '⚙️',
+// Iconos profesionales por técnica (Material/lucide), sin emojis.
+const TECH_ICON: Record<string, LucideIcon> = {
+  serigrafia: Brush,    // serigrafía
+  dtf:        Printer,  // impresión DTF
+  bordado:    Shirt,    // bordado
+  grabado:    Wand2,    // grabado láser
 };
 
 export default function CustomizerTab({
@@ -98,6 +100,7 @@ export default function CustomizerTab({
           {groups.map((group) => {
             const isSingle      = group.items.length === 1;
             const isGroupActive = group.items.some((s) => s.id === active?.id);
+            const Icon          = TECH_ICON[group.technique] ?? Sparkles;
 
             return (
               <div key={group.technique}>
@@ -117,8 +120,9 @@ export default function CustomizerTab({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-base w-6 text-center">
-                        {TECH_ICON[group.technique] ?? '✦'}
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors
+                        ${isGroupActive ? 'bg-brand-navy text-white' : 'bg-brand-navy/8 text-brand-navy'}`}>
+                        <Icon size={16} strokeWidth={2} />
                       </span>
                       <div>
                         <p className={`text-sm font-bold leading-tight
@@ -184,15 +188,24 @@ export default function CustomizerTab({
         </div>
       </div>
 
-      {/* Total logo */}
+      {/* Costo de personalización — REFERENCIAL (se cierra por WhatsApp) */}
       {active && (
-        <div className="flex items-center justify-between bg-brand-orange/5 border border-brand-orange/15 rounded-xl px-3 py-2.5">
-          <span className="text-xs text-brand-orange font-medium">
-            Costo personalización ({quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} uds)
-          </span>
-          <span className="text-sm font-black text-brand-orange">
-            S/ {(active.price_extra * quantity).toFixed(2).replace('.', ',')}
-          </span>
+        <div className="rounded-xl border border-brand-orange/20 bg-brand-orange/5 px-3 py-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-brand-orange font-medium">
+              Personalización ({quantity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')} uds) · referencial
+            </span>
+            <span className="text-sm font-black text-brand-orange whitespace-nowrap">
+              ≈ S/ {(active.price_extra * quantity).toFixed(2).replace('.', ',')}
+            </span>
+          </div>
+          <div className="flex items-start gap-1.5 border-t border-brand-orange/15 pt-2">
+            <Info size={12} className="text-brand-orange/70 flex-shrink-0 mt-0.5" />
+            <p className="text-[10px] text-brand-orange/80 leading-relaxed">
+              Precio <strong>referencial</strong>. El costo final varía según el tamaño del diseño,
+              la cantidad de colores y las unidades; lo confirmamos contigo por WhatsApp al cotizar.
+            </p>
+          </div>
         </div>
       )}
 

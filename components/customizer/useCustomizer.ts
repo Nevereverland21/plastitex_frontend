@@ -231,7 +231,16 @@ export function useCustomizer({ productImageUrl, productName, initialData }: Use
     if (!logoDataUrl || removingBg) return;
     setRemovingBg(true);
     try {
-      const { removeBackground } = await import('@imgly/background-removal');
+      // El import dinámico de un módulo CJS en Next puede dejar las exports
+      // bajo `.default` (de ahí el "removeBackground is not a function").
+      // Resolvemos la función de forma robusta cubriendo ambos casos.
+      const mod = await import('@imgly/background-removal') as unknown as Record<string, unknown> & { default?: Record<string, unknown> };
+      const removeBackground = (mod.removeBackground
+        ?? mod.default?.removeBackground
+        ?? mod.default) as ((input: Blob) => Promise<Blob>) | undefined;
+      if (typeof removeBackground !== 'function') {
+        throw new Error('No se pudo cargar el removedor de fondo. Recarga la página e intenta de nuevo.');
+      }
       const res        = await fetch(logoDataUrl);
       const blob       = await res.blob();
       const resultBlob = await removeBackground(blob);

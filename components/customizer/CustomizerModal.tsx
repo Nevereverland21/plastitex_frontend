@@ -235,7 +235,7 @@ export default function CustomizerModal({
                     <div className="text-center">
                       <p className="text-sm font-semibold text-brand-navy">Haz clic o arrastra tu archivo</p>
                       <p className="text-xs text-gray-400 mt-1">PNG, JPG, SVG · Máx 5 MB</p>
-                      <p className="text-xs text-brand-orange font-medium mt-1.5">✦ PNG sin fondo recomendado</p>
+                      <p className="text-xs text-brand-orange font-medium mt-1.5 flex items-center justify-center gap-1"><Sparkles size={11} /> PNG sin fondo recomendado</p>
                     </div>
                   </div>
                 </div>
@@ -249,7 +249,7 @@ export default function CustomizerModal({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-brand-navy">Logo cargado</p>
-                      <p className="text-xs text-gray-400">{bgRemoved ? '✓ Fondo eliminado' : 'Original'}</p>
+                      <p className="text-xs text-gray-400">{bgRemoved ? (<span className="inline-flex items-center gap-1 text-emerald-600"><CheckCircle size={11} /> Fondo eliminado</span>) : 'Original'}</p>
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => fileInputRef.current?.click()}

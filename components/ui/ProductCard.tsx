@@ -124,11 +124,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           </Link>
         </div>
 
-        {/* Zona tiers / mínimo — altura fija para alinear todas las cards */}
-        <div className="h-[38px] flex items-start">
+        {/* Zona tiers / mínimo — crece con el contenido (min-h) para no encimar
+            el precio; se muestran hasta 3 rangos + indicador "+N". */}
+        <div className="min-h-[34px] flex items-start">
           {hasTiers ? (
             <div className="flex flex-wrap gap-1">
-              {product.pricing_tiers!.map((tier, i) => (
+              {product.pricing_tiers!.slice(0, 3).map((tier, i) => (
                 <button
                   key={i}
                   onMouseEnter={() => setActiveTierIndex(i)}
@@ -143,6 +144,12 @@ export default function ProductCard({ product }: ProductCardProps) {
                   {formatQuantity(tier.min_quantity)}+ → S/{formatPrice(parseFloat(String(tier.unit_price)))}
                 </button>
               ))}
+              {product.pricing_tiers!.length > 3 && (
+                <span className="self-center px-2 py-0.5 rounded-full text-[10px] font-bold
+                                 bg-brand-navy/5 text-brand-navy/50 border border-brand-navy/10">
+                  +{product.pricing_tiers!.length - 3} más
+                </span>
+              )}
             </div>
           ) : product.min_units > 1 ? (
             <div className="flex items-center gap-1 text-amber-600 bg-amber-50 rounded-lg px-2 py-1 w-fit">

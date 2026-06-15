@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { MessageCircle, Mail, MapPin, Phone } from 'lucide-react';
+import { MessageCircle, Mail, MapPin, Phone, Heart } from 'lucide-react';
 import { FaFacebookF, FaInstagram, FaTiktok, FaLinkedinIn, FaYoutube } from 'react-icons/fa';
 
 const SOCIAL = {
@@ -149,7 +149,7 @@ export default function Footer() {
             </Link>
             <span className="text-white/20">·</span>
             <p className="text-white/40 text-xs flex items-center gap-1">
-              Hecho con <span className="text-brand-orange">❤</span> en Perú
+              Hecho con <Heart size={11} className="text-brand-orange fill-brand-orange" /> en Perú
             </p>
           </div>
         </div>

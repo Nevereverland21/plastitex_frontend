@@ -225,7 +225,7 @@ export default function PurchasePanel({
         <div className="flex mt-3 mb-0 bg-gray-100/70 rounded-xl p-1 gap-1">
           {([
             { id: 'comprar',      label: 'Comprar' },
-            { id: 'personalizar', label: 'Personalizar ✦' },
+            { id: 'personalizar', label: 'Personalizar' },
           ] as const).map((tab) => (
             <button
               key={tab.id}
