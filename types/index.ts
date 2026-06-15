@@ -242,6 +242,14 @@ export interface CreateQuotePayload {
   message?: string;
   /** Mockup (producto + logo) que armó el cliente, como data URL base64. */
   customization_preview_data?: string;
+  /** Canal (opcional): si se omite, el backend lo deriva por la cantidad. */
+  channel?: 'retail' | 'wholesale';
+  /** Entrega. Si es delivery, la cotización viaja con la dirección del cliente. */
+  delivery_type?: DeliveryType;
+  address?: string;
+  address_reference?: string;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
 }
 
 // ─── PAYMENT LINK ─────────────────────────────────────────────────────────────

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Loader2, CheckCircle, MessageCircle, AlertCircle } from 'lucide-react';
+import { X, Loader2, CheckCircle, MessageCircle, AlertCircle, Store, Truck } from 'lucide-react';
 import type { ProductDetail } from '@/types';
 import { createQuote } from '@/lib/api';
 import { WHATSAPP } from '@/lib/config';
+import AddressMapPicker, { type AddressValue } from '@/components/checkout/AddressMapPicker';
 
 interface QuoteRequestModalProps {
   product: ProductDetail;
@@ -60,6 +61,10 @@ export default function QuoteRequestModal({
   onClose,
 }: QuoteRequestModalProps) {
   const [form, setForm] = useState({ customer_name: '', email: '', phone: '', company: '', message: '' });
+  const [deliveryType, setDeliveryType] = useState<'pickup' | 'delivery'>('pickup');
+  const [location, setLocation] = useState<AddressValue>({
+    address: '', reference: '', latitude: null, longitude: null,
+  });
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +74,11 @@ export default function QuoteRequestModal({
     e.preventDefault();
     if (!form.customer_name.trim() || !form.email.trim() || !form.phone.trim()) {
       setError('Completa nombre, correo y teléfono.');
+      return;
+    }
+    // Delivery: basta con la dirección escrita O un punto marcado en el mapa.
+    if (deliveryType === 'delivery' && !location.address.trim() && location.latitude == null) {
+      setError('Indica tu dirección de entrega en el mapa (o escríbela).');
       return;
     }
     setStatus('loading');
@@ -88,6 +98,16 @@ export default function QuoteRequestModal({
         logo_notes: logoNotes || undefined,
         message: form.message.trim() || undefined,
         customization_preview_data: previewData,
+        delivery_type: deliveryType,
+        // Solo enviamos la dirección si el cliente pidió delivery.
+        ...(deliveryType === 'delivery'
+          ? {
+              address: location.address.trim() || undefined,
+              address_reference: location.reference.trim() || undefined,
+              delivery_latitude: location.latitude ?? undefined,
+              delivery_longitude: location.longitude ?? undefined,
+            }
+          : {}),
       });
       setStatus('done');
       // Abrir WhatsApp para coordinar (el cliente adjunta su logo ahí).
@@ -102,7 +122,7 @@ export default function QuoteRequestModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-2xl bg-white shadow-xl"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -174,6 +194,43 @@ export default function QuoteRequestModal({
                 />
               </div>
             ))}
+
+            {/* Entrega: recojo o delivery (con mapa) */}
+            <div>
+              <label className="text-[11px] font-semibold text-gray-500">¿Cómo quieres recibirlo?</label>
+              <div className="mt-1 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeliveryType('pickup')}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-colors
+                    ${deliveryType === 'pickup'
+                      ? 'border-brand-navy bg-brand-navy/5 text-brand-navy'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+                >
+                  <Store size={14} /> Recojo en tienda
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeliveryType('delivery')}
+                  className={`flex items-center justify-center gap-1.5 rounded-xl border-2 px-3 py-2.5 text-xs font-bold transition-colors
+                    ${deliveryType === 'delivery'
+                      ? 'border-brand-navy bg-brand-navy/5 text-brand-navy'
+                      : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'}`}
+                >
+                  <Truck size={14} /> Delivery
+                </button>
+              </div>
+            </div>
+
+            {deliveryType === 'delivery' && (
+              <div className="space-y-2.5 rounded-xl bg-gray-50 p-3">
+                <p className="text-[11px] leading-relaxed text-amber-700">
+                  Marca tu ubicación en el mapa. El costo de delivery se coordina contigo
+                  por WhatsApp según tu zona.
+                </p>
+                <AddressMapPicker value={location} onChange={setLocation} />
+              </div>
+            )}
 
             <div>
               <label className="text-[11px] font-semibold text-gray-500">Mensaje (opcional)</label>
