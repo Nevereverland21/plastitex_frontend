@@ -233,12 +233,11 @@ export async function getProductBySlugServer(slug: string): Promise<ProductDetai
 
 export async function getOrderByToken(token: string): Promise<PublicOrder | null> {
   try {
-    // Polling del seguimiento: evitamos el caché del navegador (param único +
-    // no-cache) para que el estado y la fecha de entrega reflejen siempre lo
-    // último que cambió el admin.
+    // Polling del seguimiento: el parámetro único `_` hace la URL distinta en
+    // cada llamada → el navegador nunca la sirve de caché. (No mandamos header
+    // Cache-Control: dispara preflight CORS y no es necesario.)
     const { data } = await api.get(`/api/orders/public/${token}/`, {
       params: { _: Date.now() },
-      headers: { 'Cache-Control': 'no-cache' },
     });
     return data;
   } catch (err) {

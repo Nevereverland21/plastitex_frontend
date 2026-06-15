@@ -1,7 +1,7 @@
 'use client';
 
 import { Package, User, MapPin, Calendar, Truck } from 'lucide-react';
-import { formatPrice } from '@/lib/formatters';
+import { formatPrice, formatDateLong } from '@/lib/formatters';
 import type { PublicOrder } from '@/types';
 
 interface OrderSummaryCardProps {
@@ -45,11 +45,7 @@ export default function OrderSummaryCard({ order }: OrderSummaryCardProps) {
           <div>
             <p className="text-xs text-gray-500">Fecha del pedido</p>
             <p className="text-sm font-medium text-gray-900">
-              {new Date(order.created_at).toLocaleDateString('es-PE', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-              })}
+              {formatDateLong(order.created_at)}
             </p>
           </div>
         </div>
@@ -60,11 +56,7 @@ export default function OrderSummaryCard({ order }: OrderSummaryCardProps) {
             <div>
               <p className="text-xs text-gray-500">Fecha estimada de entrega</p>
               <p className="text-sm font-medium text-gray-900">
-                {new Date(order.delivery_deadline).toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+                {formatDateLong(order.delivery_deadline)}
               </p>
             </div>
           </div>
