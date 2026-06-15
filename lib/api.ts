@@ -233,7 +233,13 @@ export async function getProductBySlugServer(slug: string): Promise<ProductDetai
 
 export async function getOrderByToken(token: string): Promise<PublicOrder | null> {
   try {
-    const { data } = await api.get(`/api/orders/public/${token}/`);
+    // Polling del seguimiento: evitamos el caché del navegador (param único +
+    // no-cache) para que el estado y la fecha de entrega reflejen siempre lo
+    // último que cambió el admin.
+    const { data } = await api.get(`/api/orders/public/${token}/`, {
+      params: { _: Date.now() },
+      headers: { 'Cache-Control': 'no-cache' },
+    });
     return data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.status === 404) {

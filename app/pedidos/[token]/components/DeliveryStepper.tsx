@@ -13,12 +13,13 @@ const ALL_STEPS = [
   { key: 'confirmed',     label: 'Confirmado',           description: 'Pago confirmado',              icon: CheckCircle2 },
   { key: 'in_production', label: 'En producción',        description: 'Fabricando tu pedido',         icon: Factory },
   { key: 'ready',         label: 'Listo para entrega',   description: 'Empacado y listo',             icon: PackageCheck },
-  { key: 'dispatched',    label: 'Enviado',              description: 'En camino a tu dirección',     icon: Truck },
+  { key: 'dispatched',    label: 'En camino',            description: 'Tu pedido va en camino',       icon: Truck },
   { key: 'delivered',     label: 'Entregado',            description: 'Entrega completada',           icon: PartyPopper },
 ] as const;
 
+// Minorista con delivery: 5 pasos (incluye "En camino"), sin producción.
 const RETAIL_STEPS = ALL_STEPS.filter(s =>
-  ['pending', 'confirmed', 'ready', 'delivered'].includes(s.key)
+  ['pending', 'confirmed', 'ready', 'dispatched', 'delivered'].includes(s.key)
 );
 
 export default function DeliveryStepper({ status, orderType }: DeliveryStepperProps) {
