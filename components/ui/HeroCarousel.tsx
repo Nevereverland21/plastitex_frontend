@@ -17,17 +17,19 @@ import {
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
 type CTA = { label: string; href: string; icon?: 'arrow' | 'whatsapp' };
-type Theme = 'light' | 'vibrant' | 'dark';
 
 type HeroSlide = {
   id: string;
-  theme: Theme;
   eyebrow?: string;
   title: string;
   highlight?: string;
   subtitle?: string;
   image: string;
   imageAlt: string;
+  /** Posición del foco de la imagen para que el producto no quede tapado por el texto. */
+  objectPosition?: string;
+  /** Muestra la barra de confianza (solo en el primer slide). */
+  showTrustBar?: boolean;
   ctaPrimary?: CTA;
   ctaSecondary?: CTA;
 };
@@ -41,92 +43,56 @@ const WHATSAPP_URL = WHATSAPP.baseUrl;
 const SLIDES: HeroSlide[] = [
   {
     id: 'manifiesto',
-    theme: 'light',
     eyebrow: 'Tienda online',
     title: 'Transformamos ideas',
     highlight: 'en Merchandising',
     subtitle: 'Tomatodos, mugs, llaveros, USB y más con tu logo. Compra por unidad, recibe en casa.',
-    image: '/hero/familia.png',
-    imageAlt: 'Productos publicitarios personalizados de Plastitex',
+    image: '/hero/image8.webp',
+    imageAlt: 'Merchandising personalizado de Plastitex: tomatodo, mousepad, pin y llavero',
+    objectPosition: '70% center',
+    showTrustBar: true,
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
   {
     id: 'tomatodos',
-    theme: 'vibrant',
     eyebrow: 'Tomatodos personalizados',
     title: 'Tu marca,',
     highlight: 'en cada sorbo',
     subtitle: 'Tomatodos en colores vivos con tu logo. Ideales para campañas, eventos y regalos corporativos.',
-    image: '/hero/tomatodos.png',
-    imageAlt: 'Tomatodos de colores personalizados con logo',
+    image: '/hero/bg-tomatodos.webp',
+    imageAlt: 'Tomatodos de colores personalizados con logos de distintas marcas',
+    objectPosition: '60% center',
     ctaPrimary: { label: 'Ver tomatodos', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
   {
     id: 'personalizacion',
-    theme: 'dark',
     eyebrow: 'Personalización total',
     title: 'Tu logo en',
     highlight: 'cualquier forma',
     subtitle: 'USB, llaveros y artículos a medida. Convertimos tu marca en un producto que se queda.',
-    image: '/hero/personalizados.png',
-    imageAlt: 'USB con formas personalizadas a medida',
+    image: '/hero/bg-usb.webp',
+    imageAlt: 'USB con formas personalizadas a medida: cámaras, motos y maquinaria',
+    objectPosition: '65% center',
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
   {
     id: 'llaveros',
-    theme: 'vibrant',
     eyebrow: 'Llaveros y accesorios',
     title: 'Detalles que',
     highlight: 'recuerdan tu marca',
     subtitle: 'Llaveros, mousepads y artículos publicitarios que tu cliente usa todos los días.',
-    image: '/hero/llaveros.png',
-    imageAlt: 'Llaveros publicitarios personalizados',
+    image: '/hero/bg-llaveros.webp',
+    imageAlt: 'Llaveros de caucho personalizados con logos de empresas',
+    objectPosition: '60% center',
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
 ];
 
 const AUTOPLAY_MS = 7000;
-
-// Estilos por tema (fondo de marca, colores de texto, glow, color de puntos).
-const THEMES: Record<Theme, {
-  section: string; eyebrow: string; title: string; highlight: string;
-  subtitle: string; glow: string; dotTrack: string; dotColor: string;
-}> = {
-  light: {
-    section: 'bg-gradient-to-br from-white via-brand-light to-[#e7ecf7]',
-    eyebrow: 'text-brand-orange',
-    title: 'text-brand-navy',
-    highlight: 'text-brand-orange',
-    subtitle: 'text-gray-600',
-    glow: 'rgba(43,169,224,0.16)',
-    dotTrack: 'bg-brand-navy/15',
-    dotColor: '#1B2B5E',
-  },
-  vibrant: {
-    section: 'bg-gradient-to-br from-[#14224f] via-[#21347a] to-[#2BA9E0]',
-    eyebrow: 'text-orange-300',
-    title: 'text-white',
-    highlight: 'text-orange-300',
-    subtitle: 'text-white/85',
-    glow: 'rgba(255,107,43,0.20)',
-    dotTrack: 'bg-white/30',
-    dotColor: '#ffffff',
-  },
-  dark: {
-    section: 'bg-gradient-to-br from-[#0a1024] via-[#13204a] to-[#1f3675]',
-    eyebrow: 'text-brand-sky',
-    title: 'text-white',
-    highlight: 'text-brand-sky',
-    subtitle: 'text-white/80',
-    glow: 'rgba(43,169,224,0.22)',
-    dotTrack: 'bg-white/30',
-    dotColor: '#ffffff',
-  },
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
@@ -192,8 +158,6 @@ export default function HeroCarousel() {
     }
   };
 
-  const activeTheme = THEMES[SLIDES[current].theme];
-
   return (
     <section
       aria-roledescription="carousel"
@@ -207,7 +171,7 @@ export default function HeroCarousel() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[600px] sm:h-[560px] lg:h-[640px]">
+      <div className="relative h-[620px] sm:h-[680px] lg:h-[780px]">
         {SLIDES.map((s, i) => (
           <div
             key={s.id}
@@ -219,7 +183,7 @@ export default function HeroCarousel() {
             aria-roledescription="slide"
             aria-label={`${i + 1} de ${SLIDES.length}`}
           >
-            <ProductSlide slide={s} active={i === current} priority={i === 0} />
+            <ProductSlide slide={s} active={i === current} priority={i === 0} reducedMotion={reducedMotion} />
           </div>
         ))}
 
@@ -228,25 +192,25 @@ export default function HeroCarousel() {
           onClick={prev}
           aria-label="Slide anterior"
           className="hidden sm:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20
-                     w-11 h-11 rounded-full bg-white/90 backdrop-blur border border-white/40
-                     shadow-md hover:bg-white hover:shadow-lg items-center justify-center
+                     w-11 h-11 rounded-full bg-white/15 backdrop-blur border border-white/30
+                     shadow-lg hover:bg-white/25 items-center justify-center
                      transition-all hover:scale-110 active:scale-95"
         >
-          <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
+          <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
         </button>
         <button
           onClick={next}
           aria-label="Slide siguiente"
           className="hidden sm:flex absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20
-                     w-11 h-11 rounded-full bg-brand-orange shadow-md hover:bg-orange-600
-                     hover:shadow-lg items-center justify-center transition-all hover:scale-110 active:scale-95"
+                     w-11 h-11 rounded-full bg-brand-orange shadow-lg hover:bg-orange-600
+                     hover:shadow-xl items-center justify-center transition-all hover:scale-110 active:scale-95"
         >
           <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
         </button>
 
         {/* Puntos de navegación */}
         <div
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 sm:left-auto sm:right-8 sm:translate-x-0"
           role="tablist"
           aria-label="Navegación del carrusel"
         >
@@ -257,8 +221,8 @@ export default function HeroCarousel() {
               role="tab"
               aria-selected={i === current}
               aria-label={`Ir al slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden ${
-                i === current ? `w-10 ${activeTheme.dotTrack}` : `w-2 ${activeTheme.dotTrack} hover:opacity-80`
+              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden bg-white/35 hover:bg-white/50 ${
+                i === current ? 'w-10' : 'w-2'
               }`}
             >
               {i === current && (
@@ -273,23 +237,23 @@ export default function HeroCarousel() {
       </div>
 
       <style jsx>{`
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
+        @keyframes ken-burns {
+          from { transform: scale(1); }
+          to { transform: scale(1.08); }
         }
         @keyframes stagger-in {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        :global(.anim-float) { animation: float-slow 5.5s ease-in-out infinite; }
+        :global(.anim-kenburns) { animation: ken-burns 9s ease-out both; }
         :global(.anim-stagger > *) { animation: stagger-in 0.6s ease-out both; }
-        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.08s; }
-        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.16s; }
-        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.24s; }
-        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.32s; }
-        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.40s; }
+        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.10s; }
+        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.20s; }
+        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.30s; }
+        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.40s; }
+        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.50s; }
         @media (prefers-reduced-motion: reduce) {
-          :global(.anim-float), :global(.anim-stagger > *) { animation: none; }
+          :global(.anim-kenburns), :global(.anim-stagger > *) { animation: none; }
         }
       `}</style>
     </section>
@@ -297,75 +261,78 @@ export default function HeroCarousel() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDE DE PRODUCTO — 2 columnas en desktop (texto + producto juntos),
-// apilado y centrado en móvil. Fondo de marca a sangre completa, sin recuadros.
+// SLIDE DE PRODUCTO — imagen fotográfica a sangre completa con texto superpuesto
+// a la izquierda. Degradado oscuro para garantizar la legibilidad sobre la foto.
 // ─────────────────────────────────────────────────────────────────────────────
-function ProductSlide({ slide, active, priority }: { slide: HeroSlide; active: boolean; priority: boolean }) {
-  const t = THEMES[slide.theme];
-
+function ProductSlide({
+  slide,
+  active,
+  priority,
+  reducedMotion,
+}: {
+  slide: HeroSlide;
+  active: boolean;
+  priority: boolean;
+  reducedMotion: boolean;
+}) {
   return (
-    <div className={`relative h-full w-full overflow-hidden ${t.section}`}>
-      {/* Glow radial para profundidad detrás del producto */}
+    <div className="relative h-full w-full overflow-hidden bg-brand-navy">
+      {/* Imagen de fondo a sangre completa con leve zoom (Ken Burns) mientras está activa */}
+      <div className={`absolute inset-0 ${active && !reducedMotion ? 'anim-kenburns' : ''}`}>
+        <Image
+          src={slide.image}
+          alt={slide.imageAlt}
+          fill
+          priority={priority}
+          sizes="100vw"
+          className="object-cover"
+          style={{ objectPosition: slide.objectPosition ?? 'center' }}
+        />
+      </div>
+
+      {/* Degradado oscuro de izquierda a derecha para la legibilidad del texto */}
+      <div
+        className="absolute inset-0 pointer-events-none
+                   bg-gradient-to-r from-[#0a1024]/95 via-[#0a1024]/65 to-transparent
+                   md:from-[#0a1024]/92 md:via-[#0a1024]/48 md:to-transparent"
+      />
+      {/* Oscurecido radial extra en el lado izquierdo (donde va el texto) */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: `radial-gradient(circle at 72% 45%, ${t.glow}, transparent 60%)` }}
+        style={{ background: 'radial-gradient(115% 95% at 0% 55%, rgba(10,16,36,0.6), transparent 58%)' }}
       />
-      {/* Textura de puntos sutil */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.05]"
-        style={{
-          backgroundImage: `radial-gradient(circle, ${t.dotColor} 1px, transparent 1px)`,
-          backgroundSize: '34px 34px',
-        }}
-      />
+      {/* Refuerzo inferior para móvil (zona de puntos) */}
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0a1024]/60 via-transparent to-transparent" />
 
-      <div
-        className="relative h-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-10
-                   flex flex-col items-center justify-center gap-4 text-center
-                   md:grid md:grid-cols-2 md:items-center md:gap-10 md:text-left"
-      >
-        {/* Texto */}
+      {/* Contenido */}
+      <div className="relative h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 flex items-center">
         <div
-          className={`order-2 md:order-1 w-full max-w-xl mx-auto md:mx-0 ${active ? 'anim-stagger' : ''}`}
+          className={`w-full max-w-xl text-left ${active ? 'anim-stagger' : ''}`}
           key={`${slide.id}-${active}`}
         >
           {slide.eyebrow && (
-            <p className={`text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3 ${t.eyebrow}`}>
+            <p className="text-sm sm:text-base font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4 text-orange-300">
               {slide.eyebrow}
             </p>
           )}
-          <h1 className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.06] tracking-tight mb-3 md:mb-4 ${t.title}`}>
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-4 md:mb-5 text-white drop-shadow-lg">
             {slide.title}{' '}
-            {slide.highlight && <span className={t.highlight}>{slide.highlight}</span>}
+            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
           </h1>
           {slide.subtitle && (
-            <p className={`text-base md:text-lg leading-relaxed mb-5 md:mb-7 max-w-md mx-auto md:mx-0 ${t.subtitle}`}>
+            <p className="text-lg md:text-xl leading-relaxed mb-6 md:mb-8 max-w-lg text-white/90 drop-shadow">
               {slide.subtitle}
             </p>
           )}
-          <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+          <div className="flex flex-wrap gap-3">
             <CTAButton cta={slide.ctaPrimary} variant="primary" />
             <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
           </div>
-          {slide.theme === 'light' && (
-            <div className="mt-6 flex justify-center md:justify-start">
+          {slide.showTrustBar && (
+            <div className="mt-6">
               <TrustBar />
             </div>
           )}
-        </div>
-
-        {/* Producto */}
-        <div className="order-1 md:order-2 relative w-full h-[210px] sm:h-[280px] md:h-[86%]">
-          <div className={`relative h-full w-full ${active ? 'anim-float' : ''}`}>
-            <Image
-              src={slide.image}
-              alt={slide.imageAlt}
-              fill
-              priority={priority}
-              sizes="(max-width: 768px) 90vw, 46vw"
-              className="object-contain drop-shadow-2xl"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -379,7 +346,7 @@ function CTAButton({ cta, variant }: { cta?: CTA; variant: 'primary' | 'whatsapp
   if (!cta) return null;
 
   const baseStyles =
-    'inline-flex items-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-sm md:text-base font-semibold transition-all hover:scale-105 active:scale-95 shadow-md hover:shadow-lg';
+    'inline-flex items-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-sm md:text-base font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl';
 
   const variantStyles = {
     primary: 'bg-brand-orange hover:bg-orange-600 text-white',
@@ -420,10 +387,10 @@ function TrustBar() {
     { icon: <CreditCard size={14} strokeWidth={2.5} />, label: 'Pago seguro' },
   ];
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-700 justify-center md:justify-start">
+    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-white/85">
       {items.map((it) => (
         <span key={it.label} className="flex items-center gap-1.5">
-          <span className="text-green-600">{it.icon}</span>
+          <span className="text-green-400">{it.icon}</span>
           <span className="font-medium">{it.label}</span>
         </span>
       ))}

@@ -94,11 +94,25 @@ export default function Navbar() {
     setMobileOpen(false);
   };
 
+  // Header transparente sobre el carrusel: solo en la home y mientras no se ha hecho scroll.
+  const isHome = pathname === '/';
+  const overHero = isHome && !scrolled;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
 
+      {/* Scrim superior para legibilidad cuando el header es transparente sobre el hero */}
+      {overHero && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 z-0
+                     bg-gradient-to-b from-black/55 via-black/25 to-transparent"
+          aria-hidden="true"
+        />
+      )}
+
       {/* ═══════════ TOP BAR ═══════════ */}
-      <div className="hidden lg:block bg-brand-navy text-white/80 text-xs">
+      <div className={`relative z-10 hidden lg:block text-xs transition-colors duration-300
+                       ${overHero ? 'bg-transparent text-white/80' : 'bg-brand-navy text-white/80'}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-8">
             <div className="flex items-center gap-6">
@@ -128,29 +142,33 @@ export default function Navbar() {
       </div>
 
       {/* ═══════════ NAVBAR PRINCIPAL ═══════════ */}
-      <div className={`bg-white transition-shadow duration-300 ${scrolled ? 'shadow-md' : 'shadow-sm'}`}>
+      <div className={`relative z-10 transition-colors duration-300
+                       ${overHero ? 'bg-transparent' : `bg-white ${scrolled ? 'shadow-md' : 'shadow-sm'}`}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4 lg:gap-8 h-20">
 
             {/* Logo */}
             <Link href="/" className="flex-shrink-0 flex items-center" aria-label="Plastitex - Inicio">
               <Image src="/logo_sin_frase.png" alt="Plastitex" width={180} height={55} priority
-                className="hidden sm:block h-11 w-auto" />
+                className={`hidden sm:block h-11 w-auto transition-all ${overHero ? 'brightness-0 invert' : ''}`} />
               <Image src="/isotipo-plastitex.png" alt="Plastitex" width={40} height={44} priority
-                className="sm:hidden h-11 w-auto" />
+                className={`sm:hidden h-11 w-auto transition-all ${overHero ? 'brightness-0 invert' : ''}`} />
             </Link>
 
             {/* Buscador desktop */}
             <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-2xl" role="search">
               <div className="relative flex w-full group">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-orange transition-colors">
+                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors group-focus-within:text-brand-orange
+                                 ${overHero ? 'text-white/70' : 'text-gray-400'}`}>
                   <Search size={18} strokeWidth={2.5} />
                 </div>
                 <input type="text" value={searchValue} onChange={(e) => setSearchValue(e.target.value)}
                   placeholder={SEARCH_PLACEHOLDERS[placeholderIdx]} aria-label="Buscar productos"
-                  className="w-full h-11 pl-11 pr-28 text-sm bg-gray-50 border border-gray-200 rounded-full
-                             placeholder:text-gray-400 focus:outline-none focus:bg-white
-                             focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15 transition-all" />
+                  className={`w-full h-11 pl-11 pr-28 text-sm rounded-full transition-all focus:outline-none
+                             focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15
+                             ${overHero
+                               ? 'bg-white/10 backdrop-blur border border-white/30 text-white placeholder:text-white/70 focus:bg-white/20'
+                               : 'bg-gray-50 border border-gray-200 placeholder:text-gray-400 focus:bg-white'}`} />
                 <button type="submit"
                   className="absolute right-1 top-1/2 -translate-y-1/2 bg-brand-orange hover:bg-orange-600
                              text-white text-sm font-semibold px-5 h-9 rounded-full transition-colors active:scale-95">
@@ -161,13 +179,13 @@ export default function Navbar() {
 
             {/* Nav links desktop */}
             <nav className="hidden lg:flex items-center gap-1">
-              <NavLink href="/">Inicio</NavLink>
+              <NavLink href="/" overHero={overHero}>Inicio</NavLink>
 
               {/* Dropdown Categorías */}
               <div ref={categoriesRef} className="relative">
                 <button onClick={() => { setCategoriesOpen(!categoriesOpen); setNosotrosOpen(false); }}
-                  className="relative flex items-center gap-1 font-medium text-gray-700 hover:text-brand-navy
-                             transition-colors py-2 px-2 group"
+                  className={`relative flex items-center gap-1 font-semibold transition-colors py-2 px-2 group
+                             ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}
                   aria-expanded={categoriesOpen}>
                   Categorías
                   <ChevronDown size={14} strokeWidth={2.5}
@@ -195,13 +213,13 @@ export default function Navbar() {
                 </div>
               </div>
 
-              <NavLink href="/catalogo">Catálogo</NavLink>
+              <NavLink href="/catalogo" overHero={overHero}>Catálogo</NavLink>
 
               {/* Dropdown Nosotros */}
               <div ref={nosotrosRef} className="relative">
                 <button onClick={() => { setNosotrosOpen(!nosotrosOpen); setCategoriesOpen(false); }}
-                  className="relative flex items-center gap-1 font-medium text-gray-700 hover:text-brand-navy
-                             transition-colors py-2 px-2 group"
+                  className={`relative flex items-center gap-1 font-semibold transition-colors py-2 px-2 group
+                             ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}
                   aria-expanded={nosotrosOpen}>
                   Nosotros
                   <ChevronDown size={14} strokeWidth={2.5}
@@ -246,7 +264,7 @@ export default function Navbar() {
               </button>
 
               <button onClick={() => setMobileOpen(!mobileOpen)}
-                className="lg:hidden p-2 text-gray-700 hover:text-brand-navy transition-colors"
+                className={`lg:hidden p-2 transition-colors ${overHero ? 'text-white hover:text-white/80' : 'text-gray-700 hover:text-brand-navy'}`}
                 aria-label="Abrir menú" aria-expanded={mobileOpen}>
                 {mobileOpen ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
               </button>
@@ -256,14 +274,16 @@ export default function Navbar() {
           {/* Buscador mobile */}
           <form onSubmit={handleSearch} className="md:hidden pb-3" role="search">
             <div className="relative">
-              <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+              <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${overHero ? 'text-white/70' : 'text-gray-400'}`}>
                 <Search size={16} strokeWidth={2.5} />
               </div>
               <input type="text" value={searchValue} onChange={(e) => setSearchValue(e.target.value)}
                 placeholder={SEARCH_PLACEHOLDERS[placeholderIdx]} aria-label="Buscar productos"
-                className="w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-200 rounded-full
-                           placeholder:text-gray-400 focus:outline-none focus:bg-white
-                           focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15 transition-all" />
+                className={`w-full h-10 pl-10 pr-4 text-sm rounded-full transition-all focus:outline-none
+                           focus:border-brand-orange focus:ring-2 focus:ring-brand-orange/15
+                           ${overHero
+                             ? 'bg-white/10 backdrop-blur border border-white/30 text-white placeholder:text-white/70 focus:bg-white/20'
+                             : 'bg-gray-50 border border-gray-200 placeholder:text-gray-400 focus:bg-white'}`} />
             </div>
           </form>
         </div>
@@ -350,10 +370,11 @@ export default function Navbar() {
 
 // ─── Subcomponentes ───────────────────────────────────────────────────────────
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({ href, children, overHero }: { href: string; children: React.ReactNode; overHero?: boolean }) {
   return (
     <Link href={href}
-      className="relative font-medium text-gray-700 hover:text-brand-navy transition-colors py-2 px-2 group">
+      className={`relative font-semibold transition-colors py-2 px-2 group
+                  ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}>
       {children}
       <span className="absolute left-1/2 -bottom-0.5 h-0.5 w-0 bg-brand-orange transition-all
                        duration-300 -translate-x-1/2 group-hover:w-full" />

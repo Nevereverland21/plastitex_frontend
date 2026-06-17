@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/layout/Navbar';
+import SiteMain from '@/components/layout/SiteMain';
 import Footer from '@/components/layout/Footer';
 import CartSidebar from '@/components/cart/CartSidebar';
 import WhatsAppButton from '@/components/ui/WhatsAppButton';
@@ -57,9 +58,9 @@ export default function RootLayout({
         <Navbar />
         <CartSidebar />
         <WhatsAppButton />
-        <main id="main-content" className="pt-[132px] md:pt-20 lg:pt-[112px]">
+        <SiteMain>
           {children}
-        </main>
+        </SiteMain>
         <Footer />
       </body>
     </html>
