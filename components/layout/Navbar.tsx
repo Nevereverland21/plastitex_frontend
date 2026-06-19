@@ -12,21 +12,15 @@ import { useCartStore } from '@/store/cartStore';
 import { COMPANY } from '@/lib/config';
 import { useState, useEffect, useRef } from 'react';
 
-const CATEGORIES = [
-  { name: 'Tomatodos',  slug: 'tomatodos' },
-  { name: 'Llaveros',   slug: 'llaveros' },
-  { name: 'Mugs',       slug: 'mugs' },
-  { name: 'Pad Mouse',  slug: 'pad-mouse' },
-  { name: 'USB',        slug: 'usb' },
-  { name: 'Barmats',    slug: 'barmats' },
+const NOSOTROS_LINKS = [
+  { name: 'Quiénes somos',        href: '/nosotros',             icon: Info },
+  { name: 'Misión y Visión',      href: '/nosotros#mision',      icon: Users },
+  { name: 'Trabaja con nosotros', href: '/trabaja-con-nosotros', icon: Briefcase },
 ];
 
-const NOSOTROS_LINKS = [
-  { name: 'Quiénes somos',        href: '/nosotros',                icon: Info },
-  { name: 'Misión y Visión',      href: '/nosotros#mision',         icon: Users },
-  { name: 'Trabaja con nosotros', href: '/trabaja-con-nosotros',    icon: Briefcase },
-  { name: 'Libro de reclamos',    href: '/reclamos',                icon: FileText },
-  { name: 'Seguimiento de pedidos', href: '/seguimiento',           icon: PackageSearch },
+const ATENCION_LINKS = [
+  { name: 'Seguimiento de pedidos', href: '/seguimiento', icon: PackageSearch },
+  { name: 'Libro de Reclamaciones', href: '/reclamos',    icon: FileText },
 ];
 
 const SEARCH_PLACEHOLDERS = [
@@ -44,14 +38,15 @@ export default function Navbar() {
 
   const [scrolled,        setScrolled]        = useState(false);
   const [mobileOpen,      setMobileOpen]      = useState(false);
-  const [categoriesOpen,  setCategoriesOpen]  = useState(false);
   const [nosotrosOpen,    setNosotrosOpen]    = useState(false);
+  const [atencionOpen,    setAtencionOpen]    = useState(false);
   const [mobileNosotros,  setMobileNosotros]  = useState(false);
+  const [mobileAtencion,  setMobileAtencion]  = useState(false);
   const [searchValue,     setSearchValue]     = useState('');
   const [placeholderIdx,  setPlaceholderIdx]  = useState(0);
 
-  const categoriesRef = useRef<HTMLDivElement>(null);
   const nosotrosRef   = useRef<HTMLDivElement>(null);
+  const atencionRef   = useRef<HTMLDivElement>(null);
   const router        = useRouter();
 
   // Cerrar mobile al cambiar de ruta
@@ -72,10 +67,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (categoriesRef.current && !categoriesRef.current.contains(e.target as Node))
-        setCategoriesOpen(false);
       if (nosotrosRef.current && !nosotrosRef.current.contains(e.target as Node))
         setNosotrosOpen(false);
+      if (atencionRef.current && !atencionRef.current.contains(e.target as Node))
+        setAtencionOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -94,21 +89,11 @@ export default function Navbar() {
     setMobileOpen(false);
   };
 
-  // Header transparente sobre el carrusel: solo en la home y mientras no se ha hecho scroll.
-  const isHome = pathname === '/';
-  const overHero = isHome && !scrolled;
+  // Header siempre sólido (blanco): el hero es claro y va debajo del navbar.
+  const overHero = false;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-
-      {/* Scrim superior para legibilidad cuando el header es transparente sobre el hero */}
-      {overHero && (
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-40 z-0
-                     bg-gradient-to-b from-black/55 via-black/25 to-transparent"
-          aria-hidden="true"
-        />
-      )}
 
       {/* ═══════════ TOP BAR ═══════════ */}
       <div className={`relative z-10 hidden lg:block text-xs transition-colors duration-300
@@ -180,44 +165,11 @@ export default function Navbar() {
             {/* Nav links desktop */}
             <nav className="hidden lg:flex items-center gap-1">
               <NavLink href="/" overHero={overHero}>Inicio</NavLink>
-
-              {/* Dropdown Categorías */}
-              <div ref={categoriesRef} className="relative">
-                <button onClick={() => { setCategoriesOpen(!categoriesOpen); setNosotrosOpen(false); }}
-                  className={`relative flex items-center gap-1 font-semibold transition-colors py-2 px-2 group
-                             ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}
-                  aria-expanded={categoriesOpen}>
-                  Categorías
-                  <ChevronDown size={14} strokeWidth={2.5}
-                    className={`transition-transform duration-200 ${categoriesOpen ? 'rotate-180' : ''}`} />
-                  <span className="absolute left-1/2 -bottom-0.5 h-0.5 w-0 bg-brand-orange transition-all
-                                   duration-300 -translate-x-1/2 group-hover:w-full" />
-                </button>
-                <div className={`absolute top-full left-0 mt-2 w-44 bg-white rounded-2xl shadow-xl
-                                 border border-gray-100 overflow-hidden py-1 z-50
-                                 transition-all duration-200 origin-top-left
-                                 ${categoriesOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
-                  {CATEGORIES.map((cat) => (
-                    <Link key={cat.slug} href={`/catalogo?categoria=${cat.slug}`}
-                      onClick={() => setCategoriesOpen(false)}
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-light hover:text-brand-orange transition-colors">
-                      {cat.name}
-                    </Link>
-                  ))}
-                  <div className="border-t border-gray-100 mt-1 pt-1">
-                    <Link href="/catalogo" onClick={() => setCategoriesOpen(false)}
-                      className="block px-4 py-2.5 text-sm font-semibold text-brand-navy hover:bg-brand-light transition-colors">
-                      Ver todo →
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
               <NavLink href="/catalogo" overHero={overHero}>Catálogo</NavLink>
 
               {/* Dropdown Nosotros */}
               <div ref={nosotrosRef} className="relative">
-                <button onClick={() => { setNosotrosOpen(!nosotrosOpen); setCategoriesOpen(false); }}
+                <button onClick={() => { setNosotrosOpen(!nosotrosOpen); setAtencionOpen(false); }}
                   className={`relative flex items-center gap-1 font-semibold transition-colors py-2 px-2 group
                              ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}
                   aria-expanded={nosotrosOpen}>
@@ -234,6 +186,35 @@ export default function Navbar() {
                   {NOSOTROS_LINKS.map((item) => (
                     <Link key={item.href} href={item.href}
                       onClick={() => setNosotrosOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700
+                                 hover:bg-brand-light hover:text-brand-orange transition-colors group/item">
+                      <item.icon size={15} strokeWidth={2}
+                        className="text-gray-400 group-hover/item:text-brand-orange transition-colors flex-shrink-0" />
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dropdown Atención */}
+              <div ref={atencionRef} className="relative">
+                <button onClick={() => { setAtencionOpen(!atencionOpen); setNosotrosOpen(false); }}
+                  className={`relative flex items-center gap-1 font-semibold transition-colors py-2 px-2 group
+                             ${overHero ? 'text-white hover:text-white' : 'text-gray-700 hover:text-brand-navy'}`}
+                  aria-expanded={atencionOpen}>
+                  Atención
+                  <ChevronDown size={14} strokeWidth={2.5}
+                    className={`transition-transform duration-200 ${atencionOpen ? 'rotate-180' : ''}`} />
+                  <span className="absolute left-1/2 -bottom-0.5 h-0.5 w-0 bg-brand-orange transition-all
+                                   duration-300 -translate-x-1/2 group-hover:w-full" />
+                </button>
+                <div className={`absolute top-full right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl
+                                 border border-gray-100 overflow-hidden py-1 z-50
+                                 transition-all duration-200 origin-top-right
+                                 ${atencionOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}>
+                  {ATENCION_LINKS.map((item) => (
+                    <Link key={item.href} href={item.href}
+                      onClick={() => setAtencionOpen(false)}
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700
                                  hover:bg-brand-light hover:text-brand-orange transition-colors group/item">
                       <item.icon size={15} strokeWidth={2}
@@ -313,18 +294,6 @@ export default function Navbar() {
           <MobileLink href="/" onClick={() => setMobileOpen(false)}>Inicio</MobileLink>
           <MobileLink href="/catalogo" onClick={() => setMobileOpen(false)}>Catálogo</MobileLink>
 
-          {/* Categorías mobile */}
-          <div className="px-5 pt-4 pb-2 text-xs font-bold uppercase tracking-wider text-gray-400">
-            Categorías
-          </div>
-          {CATEGORIES.map((cat) => (
-            <Link key={cat.slug} href={`/catalogo?categoria=${cat.slug}`}
-              onClick={() => setMobileOpen(false)}
-              className="block px-5 py-2.5 text-sm text-gray-700 hover:bg-brand-light hover:text-brand-orange transition-colors">
-              {cat.name}
-            </Link>
-          ))}
-
           {/* Nosotros mobile (acordeón) */}
           <div className="border-t border-gray-100 mt-2">
             <button onClick={() => setMobileNosotros(!mobileNosotros)}
@@ -337,6 +306,30 @@ export default function Navbar() {
             {mobileNosotros && (
               <div className="bg-gray-50">
                 {NOSOTROS_LINKS.map((item) => (
+                  <Link key={item.href} href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600
+                               hover:text-brand-orange transition-colors">
+                    <item.icon size={15} strokeWidth={2} className="text-gray-400 flex-shrink-0" />
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Atención mobile (acordeón) */}
+          <div className="border-t border-gray-100">
+            <button onClick={() => setMobileAtencion(!mobileAtencion)}
+              className="w-full flex items-center justify-between px-5 py-3 text-base font-medium
+                         text-gray-800 hover:bg-brand-light hover:text-brand-orange transition-colors">
+              Atención
+              <ChevronDown size={16} strokeWidth={2.5}
+                className={`transition-transform duration-200 text-gray-400 ${mobileAtencion ? 'rotate-180' : ''}`} />
+            </button>
+            {mobileAtencion && (
+              <div className="bg-gray-50">
+                {ATENCION_LINKS.map((item) => (
                   <Link key={item.href} href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-7 py-2.5 text-sm text-gray-600

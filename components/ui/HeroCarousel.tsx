@@ -26,8 +26,6 @@ type HeroSlide = {
   subtitle?: string;
   image: string;
   imageAlt: string;
-  /** Posición del foco de la imagen para que el producto no quede tapado por el texto. */
-  objectPosition?: string;
   /** Muestra la barra de confianza (solo en el primer slide). */
   showTrustBar?: boolean;
   ctaPrimary?: CTA;
@@ -47,9 +45,8 @@ const SLIDES: HeroSlide[] = [
     title: 'Transformamos ideas',
     highlight: 'en Merchandising',
     subtitle: 'Tomatodos, mugs, llaveros, USB y más con tu logo. Compra por unidad, recibe en casa.',
-    image: '/hero/image8.webp',
-    imageAlt: 'Merchandising personalizado de Plastitex: tomatodo, mousepad, pin y llavero',
-    objectPosition: '70% center',
+    image: '/hero/imagen-principal.webp',
+    imageAlt: 'Merchandising personalizado de Plastitex: tomatodo, mousepad, mug y llavero sobre escritorio',
     showTrustBar: true,
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
@@ -62,7 +59,6 @@ const SLIDES: HeroSlide[] = [
     subtitle: 'Tomatodos en colores vivos con tu logo. Ideales para campañas, eventos y regalos corporativos.',
     image: '/hero/bg-tomatodos.webp',
     imageAlt: 'Tomatodos de colores personalizados con logos de distintas marcas',
-    objectPosition: '60% center',
     ctaPrimary: { label: 'Ver tomatodos', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
@@ -74,7 +70,6 @@ const SLIDES: HeroSlide[] = [
     subtitle: 'USB, llaveros y artículos a medida. Convertimos tu marca en un producto que se queda.',
     image: '/hero/bg-usb.webp',
     imageAlt: 'USB con formas personalizadas a medida: cámaras, motos y maquinaria',
-    objectPosition: '65% center',
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
@@ -86,13 +81,12 @@ const SLIDES: HeroSlide[] = [
     subtitle: 'Llaveros, mousepads y artículos publicitarios que tu cliente usa todos los días.',
     image: '/hero/bg-llaveros.webp',
     imageAlt: 'Llaveros de caucho personalizados con logos de empresas',
-    objectPosition: '60% center',
     ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
     ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
   },
 ];
 
-const AUTOPLAY_MS = 7000;
+const AUTOPLAY_MS = 5000;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
@@ -162,7 +156,7 @@ export default function HeroCarousel() {
     <section
       aria-roledescription="carousel"
       aria-label="Banner principal de Plastitex"
-      className="relative w-full overflow-hidden bg-brand-navy"
+      className="relative w-full overflow-hidden bg-white"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onFocus={() => setIsPaused(true)}
@@ -171,11 +165,14 @@ export default function HeroCarousel() {
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
-      <div className="relative h-[620px] sm:h-[680px] lg:h-[780px]">
+      {/* Fondo claro */}
+      <div className="absolute inset-0 bg-white" aria-hidden="true" />
+
+      <div className="relative h-[600px] sm:h-[620px] lg:h-[640px]">
         {SLIDES.map((s, i) => (
           <div
             key={s.id}
-            className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+            className={`absolute inset-0 transition-opacity duration-500 ease-out ${
               i === current ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={i !== current}
@@ -183,7 +180,7 @@ export default function HeroCarousel() {
             aria-roledescription="slide"
             aria-label={`${i + 1} de ${SLIDES.length}`}
           >
-            <ProductSlide slide={s} active={i === current} priority={i === 0} reducedMotion={reducedMotion} />
+            <ProductSlide slide={s} active={i === current} priority={i === 0} />
           </div>
         ))}
 
@@ -192,11 +189,11 @@ export default function HeroCarousel() {
           onClick={prev}
           aria-label="Slide anterior"
           className="hidden sm:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20
-                     w-11 h-11 rounded-full bg-white/15 backdrop-blur border border-white/30
-                     shadow-lg hover:bg-white/25 items-center justify-center
+                     w-11 h-11 rounded-full bg-white border border-gray-200 shadow-md
+                     hover:bg-gray-50 items-center justify-center
                      transition-all hover:scale-110 active:scale-95"
         >
-          <ChevronLeft size={20} className="text-white" strokeWidth={2.5} />
+          <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
         </button>
         <button
           onClick={next}
@@ -210,7 +207,7 @@ export default function HeroCarousel() {
 
         {/* Puntos de navegación */}
         <div
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 sm:left-auto sm:right-8 sm:translate-x-0"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2"
           role="tablist"
           aria-label="Navegación del carrusel"
         >
@@ -221,7 +218,7 @@ export default function HeroCarousel() {
               role="tab"
               aria-selected={i === current}
               aria-label={`Ir al slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden bg-white/35 hover:bg-white/50 ${
+              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden bg-brand-navy/15 hover:bg-brand-navy/30 ${
                 i === current ? 'w-10' : 'w-2'
               }`}
             >
@@ -237,15 +234,10 @@ export default function HeroCarousel() {
       </div>
 
       <style jsx>{`
-        @keyframes ken-burns {
-          from { transform: scale(1); }
-          to { transform: scale(1.08); }
-        }
         @keyframes stagger-in {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        :global(.anim-kenburns) { animation: ken-burns 9s ease-out both; }
         :global(.anim-stagger > *) { animation: stagger-in 0.6s ease-out both; }
         :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.10s; }
         :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.20s; }
@@ -253,7 +245,7 @@ export default function HeroCarousel() {
         :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.40s; }
         :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.50s; }
         @media (prefers-reduced-motion: reduce) {
-          :global(.anim-kenburns), :global(.anim-stagger > *) { animation: none; }
+          :global(.anim-stagger > *) { animation: none; }
         }
       `}</style>
     </section>
@@ -261,66 +253,62 @@ export default function HeroCarousel() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDE DE PRODUCTO — imagen fotográfica a sangre completa con texto superpuesto
-// a la izquierda. Degradado oscuro para garantizar la legibilidad sobre la foto.
+// SLIDE — imagen grande (object-cover) a la derecha en desktop / arriba en móvil,
+// con un desvanecido suave hacia el blanco donde va el texto (el "split").
 // ─────────────────────────────────────────────────────────────────────────────
 function ProductSlide({
   slide,
   active,
   priority,
-  reducedMotion,
 }: {
   slide: HeroSlide;
   active: boolean;
   priority: boolean;
-  reducedMotion: boolean;
 }) {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-brand-navy">
-      {/* Imagen de fondo a sangre completa con leve zoom (Ken Burns) mientras está activa */}
-      <div className={`absolute inset-0 ${active && !reducedMotion ? 'anim-kenburns' : ''}`}>
+    <div className="relative h-full w-full">
+      {/* Imagen grande: arriba en móvil, a la derecha en desktop (object-cover = llena, sin huecos) */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[52%]
+                   md:top-0 md:bottom-0 md:left-auto md:right-0 md:h-auto md:w-[66%] lg:w-[64%]"
+      >
         <Image
           src={slide.image}
           alt={slide.imageAlt}
           fill
           priority={priority}
-          sizes="100vw"
-          className="object-cover"
-          style={{ objectPosition: slide.objectPosition ?? 'center' }}
+          sizes="(max-width: 768px) 100vw, 60vw"
+          className="object-cover object-center"
+        />
+        {/* Split desvanecido — horizontal en desktop: el borde izquierdo de la imagen se funde en blanco */}
+        <div
+          className="hidden md:block absolute inset-y-0 left-0 w-[32%] pointer-events-none
+                     bg-gradient-to-r from-white via-white/35 to-transparent"
+        />
+        {/* Split desvanecido — vertical en móvil: el borde inferior de la imagen se funde en blanco */}
+        <div
+          className="md:hidden absolute inset-x-0 bottom-0 h-[50%] pointer-events-none
+                     bg-gradient-to-t from-white via-white/65 to-transparent"
         />
       </div>
 
-      {/* Degradado oscuro de izquierda a derecha para la legibilidad del texto */}
-      <div
-        className="absolute inset-0 pointer-events-none
-                   bg-gradient-to-r from-[#0a1024]/95 via-[#0a1024]/65 to-transparent
-                   md:from-[#0a1024]/92 md:via-[#0a1024]/48 md:to-transparent"
-      />
-      {/* Oscurecido radial extra en el lado izquierdo (donde va el texto) */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(115% 95% at 0% 55%, rgba(10,16,36,0.6), transparent 58%)' }}
-      />
-      {/* Refuerzo inferior para móvil (zona de puntos) */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#0a1024]/60 via-transparent to-transparent" />
-
-      {/* Contenido */}
-      <div className="relative h-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 flex items-center">
+      {/* Texto */}
+      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-end md:items-center">
         <div
-          className={`w-full max-w-xl text-left ${active ? 'anim-stagger' : ''}`}
+          className={`w-full max-w-md text-left pb-10 md:pb-0 ${active ? 'anim-stagger' : ''}`}
           key={`${slide.id}-${active}`}
         >
           {slide.eyebrow && (
-            <p className="text-sm sm:text-base font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4 text-orange-300">
+            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4 text-brand-orange">
               {slide.eyebrow}
             </p>
           )}
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[1.05] tracking-tight mb-4 md:mb-5 text-white drop-shadow-lg">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight mb-4 md:mb-5 text-brand-navy">
             {slide.title}{' '}
             {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
           </h1>
           {slide.subtitle && (
-            <p className="text-lg md:text-xl leading-relaxed mb-6 md:mb-8 max-w-lg text-white/90 drop-shadow">
+            <p className="text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-md text-gray-600">
               {slide.subtitle}
             </p>
           )}
@@ -387,10 +375,10 @@ function TrustBar() {
     { icon: <CreditCard size={14} strokeWidth={2.5} />, label: 'Pago seguro' },
   ];
   return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-white/85">
+    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-600">
       {items.map((it) => (
         <span key={it.label} className="flex items-center gap-1.5">
-          <span className="text-green-400">{it.icon}</span>
+          <span className="text-green-600">{it.icon}</span>
           <span className="font-medium">{it.label}</span>
         </span>
       ))}
