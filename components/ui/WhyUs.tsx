@@ -41,53 +41,53 @@ const features = [
 export default function WhyUs() {
   return (
     <section
-      className="bg-brand-light py-16 md:py-20"
+      className="bg-brand-light py-10 md:py-12"
       aria-labelledby="why-us-heading"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <header className="text-center mb-12 md:mb-14">
-          <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+        <header className="text-center mb-8 md:mb-10">
+          <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
             Nuestra promesa
           </p>
           <h2
             id="why-us-heading"
-            className="text-2xl sm:text-3xl md:text-4xl font-bold text-brand-navy tracking-tight"
+            className="text-lg sm:text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
           >
             ¿Por qué elegir Plastitex?
           </h2>
-          <p className="text-gray-600 mt-3 max-w-xl mx-auto text-sm md:text-base leading-relaxed">
+          <p className="text-gray-600 mt-2 max-w-xl mx-auto text-sm leading-relaxed">
             Confianza, calidad y servicio en cada pedido.
           </p>
         </header>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           {features.map((feature) => (
             <article
               key={feature.title}
-              className="group bg-white hover:bg-white
-                         border border-gray-100 hover:border-brand-orange/40
-                         hover:shadow-lg rounded-2xl p-6
+              className="group bg-white
+                         border border-gray-100 hover:border-brand-turquoise/40
+                         hover:shadow-lg rounded-xl p-5
                          transition-all duration-300 hover:-translate-y-1"
             >
               {/* Ícono */}
               <div
-                className="w-12 h-12 bg-brand-orange/10 group-hover:bg-brand-orange
-                              rounded-xl flex items-center justify-center mb-4
+                className="w-10 h-10 bg-brand-turquoise/10 group-hover:bg-brand-turquoise
+                              rounded-lg flex items-center justify-center mb-3
                               transition-all duration-300 group-hover:scale-110"
               >
                 <feature.icon
-                  size={22}
+                  size={18}
                   strokeWidth={2}
-                  className="text-brand-orange group-hover:text-white transition-colors"
+                  className="text-brand-turquoise group-hover:text-white transition-colors"
                 />
               </div>
 
-              <h3 className="text-brand-navy font-bold text-base mb-2">
+              <h3 className="text-brand-navy font-bold text-sm mb-1">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
+              <p className="text-gray-600 text-xs leading-relaxed">
                 {feature.description}
               </p>
             </article>

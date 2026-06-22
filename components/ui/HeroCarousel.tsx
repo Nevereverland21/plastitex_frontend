@@ -4,20 +4,22 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ArrowRight,
   ChevronLeft,
   ChevronRight,
-  Truck,
-  MessageCircle,
+  Star,
   ShoppingBag,
-  CreditCard,
+  Boxes,
+  PackageCheck,
+  ArrowRight,
+  Truck,
+  ShieldCheck,
+  Clock,
+  type LucideIcon,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIPOS
 // ─────────────────────────────────────────────────────────────────────────────
-type CTA = { label: string; href: string; icon?: 'arrow' | 'whatsapp' };
-
 type HeroSlide = {
   id: string;
   eyebrow?: string;
@@ -26,67 +28,83 @@ type HeroSlide = {
   subtitle?: string;
   image: string;
   imageAlt: string;
-  /** Muestra la barra de confianza (solo en el primer slide). */
-  showTrustBar?: boolean;
-  ctaPrimary?: CTA;
-  ctaSecondary?: CTA;
+  objectPosition?: string;
+};
+
+type QuickCTA = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  variant?: 'primary' | 'secondary';
+};
+
+type TrustPill = {
+  label: string;
+  icon: LucideIcon;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-import { WHATSAPP } from '@/lib/config';
-const WHATSAPP_URL = WHATSAPP.baseUrl;
-
 const SLIDES: HeroSlide[] = [
   {
-    id: 'manifiesto',
+    id: 'tienda',
     eyebrow: 'Tienda online',
-    title: 'Transformamos ideas',
-    highlight: 'en Merchandising',
-    subtitle: 'Tomatodos, mugs, llaveros, USB y más con tu logo. Compra por unidad, recibe en casa.',
+    title: 'Artículos promocionales',
+    highlight: 'para cada ocasión',
+    subtitle: 'Compra por unidad o al por mayor con stock disponible y envío a todo el Perú.',
     image: '/hero/imagen-principal.webp',
-    imageAlt: 'Merchandising personalizado de Plastitex: tomatodo, mousepad, mug y llavero sobre escritorio',
-    showTrustBar: true,
-    ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
-    ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
+    imageAlt: 'Set de merchandising Plastitex sobre un escritorio: tomatodo, mousepad, llavero y laptop',
+    objectPosition: 'center',
   },
   {
-    id: 'tomatodos',
-    eyebrow: 'Tomatodos personalizados',
-    title: 'Tu marca,',
-    highlight: 'en cada sorbo',
-    subtitle: 'Tomatodos en colores vivos con tu logo. Ideales para campañas, eventos y regalos corporativos.',
+    id: 'stock',
+    eyebrow: 'Listo para enviar',
+    title: 'Productos en stock,',
+    highlight: 'entrega inmediata',
+    subtitle: 'Tomatodos, mugs y llaveros disponibles hoy. Pide desde 1 unidad y recíbelo en casa.',
     image: '/hero/bg-tomatodos.webp',
     imageAlt: 'Tomatodos de colores personalizados con logos de distintas marcas',
-    ctaPrimary: { label: 'Ver tomatodos', href: '/catalogo', icon: 'arrow' },
-    ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
+    objectPosition: 'center',
   },
   {
-    id: 'personalizacion',
-    eyebrow: 'Personalización total',
+    id: 'mayor',
+    eyebrow: 'Venta por mayor',
+    title: 'Más cantidad,',
+    highlight: 'mejor precio',
+    subtitle: 'Escalas de precio por volumen para empresas, campañas y eventos. Cotiza al instante.',
+    image: '/hero/bg-llaveros.webp',
+    imageAlt: 'Llaveros publicitarios personalizados de distintas marcas',
+    objectPosition: 'center',
+  },
+  {
+    id: 'merch',
+    eyebrow: 'Personalización',
     title: 'Tu logo en',
-    highlight: 'cualquier forma',
-    subtitle: 'USB, llaveros y artículos a medida. Convertimos tu marca en un producto que se queda.',
+    highlight: 'cada producto',
+    subtitle: 'USB, llaveros, tomatodos y más. Una línea personalizable dentro de nuestra tienda.',
     image: '/hero/bg-usb.webp',
     imageAlt: 'USB con formas personalizadas a medida: cámaras, motos y maquinaria',
-    ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
-    ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
-  },
-  {
-    id: 'llaveros',
-    eyebrow: 'Llaveros y accesorios',
-    title: 'Detalles que',
-    highlight: 'recuerdan tu marca',
-    subtitle: 'Llaveros, mousepads y artículos publicitarios que tu cliente usa todos los días.',
-    image: '/hero/bg-llaveros.webp',
-    imageAlt: 'Llaveros de caucho personalizados con logos de empresas',
-    ctaPrimary: { label: 'Ver catálogo', href: '/catalogo', icon: 'arrow' },
-    ctaSecondary: { label: 'Cotizar', href: WHATSAPP_URL, icon: 'whatsapp' },
+    objectPosition: 'center',
   },
 ];
 
-const AUTOPLAY_MS = 5000;
+// CTAs persistentes — los 4 motivos de compra del cliente.
+const QUICK_CTAS: QuickCTA[] = [
+  { label: 'Comprar por Unidad', href: '/catalogo?catalog_type=retail', icon: ShoppingBag, variant: 'primary' },
+  { label: 'Comprar por Mayor', href: '/catalogo?catalog_type=wholesale', icon: Boxes, variant: 'primary' },
+  { label: 'Productos en Stock', href: '/catalogo?in_stock=true', icon: PackageCheck, variant: 'secondary' },
+  { label: 'Productos Novedosos', href: '/catalogo?ordering=-created_at', icon: Star, variant: 'secondary' },
+];
+
+// Mini trust pills dentro del hero.
+const TRUST_PILLS: TrustPill[] = [
+  { label: 'Envíos a todo el Perú', icon: Truck },
+  { label: 'Compra desde 1 unidad', icon: ShieldCheck },
+  { label: 'Atención L-V 9am-6pm', icon: Clock },
+];
+
+const AUTOPLAY_MS = 4500;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPONENTE PRINCIPAL
@@ -95,12 +113,9 @@ export default function HeroCarousel() {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [progress, setProgress] = useState(0);
 
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
-  const progressStartTime = useRef<number>(Date.now());
-  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -115,137 +130,172 @@ export default function HeroCarousel() {
   const goTo = useCallback((i: number) => setCurrent(i), []);
 
   useEffect(() => {
-    if (isPaused || reducedMotion) {
-      setProgress(0);
-      return;
-    }
-    progressStartTime.current = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - progressStartTime.current;
-      const pct = Math.min((elapsed / AUTOPLAY_MS) * 100, 100);
-      setProgress(pct);
-      if (elapsed >= AUTOPLAY_MS) next();
-      else rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    if (isPaused || reducedMotion) return;
+    const t = setTimeout(next, AUTOPLAY_MS);
+    return () => clearTimeout(t);
   }, [current, isPaused, reducedMotion, next]);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') prev();
-      else if (e.key === 'ArrowRight') next();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [next, prev]);
 
   const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
   const onTouchMove = (e: React.TouchEvent) => { touchEndX.current = e.touches[0].clientX; };
   const onTouchEnd = () => {
     const delta = touchStartX.current - touchEndX.current;
-    if (Math.abs(delta) > 50) {
-      if (delta > 0) next();
-      else prev();
-    }
+    if (Math.abs(delta) > 50) (delta > 0 ? next : prev)();
   };
+
+  const slide = SLIDES[current];
 
   return (
     <section
       aria-roledescription="carousel"
       aria-label="Banner principal de Plastitex"
-      className="relative w-full overflow-hidden bg-white"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onFocus={() => setIsPaused(true)}
-      onBlur={() => setIsPaused(false)}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      className="bg-white pt-3 sm:pt-4"
     >
-      {/* Fondo claro */}
-      <div className="absolute inset-0 bg-white" aria-hidden="true" />
-
-      <div className="relative h-[600px] sm:h-[620px] lg:h-[640px]">
-        {SLIDES.map((s, i) => (
-          <div
-            key={s.id}
-            className={`absolute inset-0 transition-opacity duration-500 ease-out ${
-              i === current ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-            }`}
-            aria-hidden={i !== current}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`${i + 1} de ${SLIDES.length}`}
-          >
-            <ProductSlide slide={s} active={i === current} priority={i === 0} />
-          </div>
-        ))}
-
-        {/* Flechas — solo desktop (en móvil se usa swipe + puntos) */}
-        <button
-          onClick={prev}
-          aria-label="Slide anterior"
-          className="hidden sm:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20
-                     w-11 h-11 rounded-full bg-white border border-gray-200 shadow-md
-                     hover:bg-gray-50 items-center justify-center
-                     transition-all hover:scale-110 active:scale-95"
-        >
-          <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={next}
-          aria-label="Slide siguiente"
-          className="hidden sm:flex absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20
-                     w-11 h-11 rounded-full bg-brand-orange shadow-lg hover:bg-orange-600
-                     hover:shadow-xl items-center justify-center transition-all hover:scale-110 active:scale-95"
-        >
-          <ChevronRight size={20} className="text-white" strokeWidth={2.5} />
-        </button>
-
-        {/* Puntos de navegación */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div
-          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2"
-          role="tablist"
-          aria-label="Navegación del carrusel"
+          className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-gray-100 shadow-sm
+                     bg-white
+                     min-h-[480px] md:min-h-0 md:h-[380px]"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
         >
-          {SLIDES.map((s, i) => (
-            <button
-              key={s.id}
-              onClick={() => goTo(i)}
-              role="tab"
-              aria-selected={i === current}
-              aria-label={`Ir al slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all duration-500 overflow-hidden bg-brand-navy/15 hover:bg-brand-navy/30 ${
-                i === current ? 'w-10' : 'w-2'
-              }`}
-            >
-              {i === current && (
+          {/* Grid interno: texto + imagen */}
+          <div className="grid grid-cols-1 md:grid-cols-2 h-full">
+            {/* ══════════ PANEL IZQUIERDO — TEXTO + CTAS ══════════ */}
+            <div className="relative z-10 order-2 md:order-1 flex flex-col justify-center
+                            bg-gradient-to-br from-brand-light to-white
+                            px-5 sm:px-8 lg:px-12 py-6 md:py-8">
+              {/* Texto con alturas reservadas para que los controles no bailen */}
+              <div key={slide.id} className="anim-stagger">
+                {slide.eyebrow && (
+                  <p className="h-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.2em]
+                                text-brand-turquoise mb-2 flex items-center">
+                    {slide.eyebrow}
+                  </p>
+                )}
+
+                <div className="min-h-[3.6rem] sm:min-h-[4.2rem] lg:min-h-[4.6rem] mb-2">
+                  <h1 className="text-xl sm:text-2xl lg:text-[1.9rem] font-bold leading-[1.15]
+                                 tracking-tight text-brand-navy">
+                    {slide.title}{' '}
+                    {slide.highlight && <span className="text-brand-turquoise">{slide.highlight}</span>}
+                  </h1>
+                </div>
+
+                <div className="min-h-[2.6rem] sm:min-h-[2.8rem] mb-4">
+                  <p className="text-sm leading-snug text-gray-600 max-w-md">
+                    {slide.subtitle}
+                  </p>
+                </div>
+              </div>
+
+              {/* CTAs persistentes */}
+              <div className="grid grid-cols-2 gap-2 max-w-md mb-4">
+                {QUICK_CTAS.map((cta) => (
+                  <CTAButton key={cta.label} cta={cta} />
+                ))}
+              </div>
+
+              {/* Trust pills */}
+              <div className="flex flex-wrap items-center gap-2 max-w-md mb-5">
+                {TRUST_PILLS.map((pill) => (
+                  <span
+                    key={pill.label}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-500
+                               bg-white border border-gray-100 rounded-full px-2.5 py-1 shadow-sm"
+                  >
+                    <pill.icon size={11} strokeWidth={2.4} className="text-brand-turquoise" />
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+
+              {/* Dots + contador — siempre en la misma posición */}
+              <div className="flex items-center justify-between max-w-md">
+                <div className="flex items-center gap-1.5" role="tablist" aria-label="Navegación del carrusel">
+                  {SLIDES.map((s, i) => (
+                    <button
+                      key={s.id}
+                      onClick={() => goTo(i)}
+                      role="tab"
+                      aria-selected={i === current}
+                      aria-label={`Ir al slide ${i + 1}`}
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        i === current
+                          ? 'w-7 bg-brand-turquoise'
+                          : 'w-2 bg-brand-navy/20 hover:bg-brand-navy/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <span className="text-[11px] font-bold text-brand-navy/40 tracking-wider">
+                  {String(current + 1).padStart(2, '0')} / {String(SLIDES.length).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+
+            {/* ══════════ PANEL DERECHO — IMAGEN LIMPIA ══════════ */}
+            <div className="relative order-1 md:order-2 bg-gray-50 overflow-hidden min-h-[220px]">
+              {SLIDES.map((s, i) => (
                 <div
-                  className="h-full bg-brand-orange rounded-full"
-                  style={{ width: `${reducedMotion ? 100 : progress}%`, transition: 'none' }}
-                />
-              )}
-            </button>
-          ))}
+                  key={s.id}
+                  className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+                    i === current ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  aria-hidden={i !== current}
+                >
+                  <Image
+                    src={s.image}
+                    alt={s.imageAlt}
+                    fill
+                    priority={i === 0}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    style={{ objectPosition: s.objectPosition ?? 'center' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ══════════ FLECHAS EN EXTREMOS LATERALES ══════════ */}
+          <button
+            onClick={prev}
+            aria-label="Slide anterior"
+            className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-20
+                       w-10 h-10 rounded-full bg-white/95 hover:bg-white
+                       shadow-lg border border-gray-100
+                       flex items-center justify-center transition-all
+                       hover:scale-110 active:scale-95"
+          >
+            <ChevronLeft size={20} className="text-brand-navy" strokeWidth={2.5} />
+          </button>
+
+          <button
+            onClick={next}
+            aria-label="Slide siguiente"
+            className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-20
+                       w-10 h-10 rounded-full bg-white/95 hover:bg-white
+                       shadow-lg border border-gray-100
+                       flex items-center justify-center transition-all
+                       hover:scale-110 active:scale-95"
+          >
+            <ChevronRight size={20} className="text-brand-navy" strokeWidth={2.5} />
+          </button>
         </div>
       </div>
 
       <style jsx>{`
         @keyframes stagger-in {
-          from { opacity: 0; transform: translateY(16px); }
+          from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        :global(.anim-stagger > *) { animation: stagger-in 0.6s ease-out both; }
-        :global(.anim-stagger > *:nth-child(1)) { animation-delay: 0.10s; }
-        :global(.anim-stagger > *:nth-child(2)) { animation-delay: 0.20s; }
-        :global(.anim-stagger > *:nth-child(3)) { animation-delay: 0.30s; }
-        :global(.anim-stagger > *:nth-child(4)) { animation-delay: 0.40s; }
-        :global(.anim-stagger > *:nth-child(5)) { animation-delay: 0.50s; }
+        :global(.anim-stagger) { animation: stagger-in 0.35s ease-out both; }
         @media (prefers-reduced-motion: reduce) {
-          :global(.anim-stagger > *) { animation: none; }
+          :global(.anim-stagger) { animation: none; }
         }
       `}</style>
     </section>
@@ -253,135 +303,36 @@ export default function HeroCarousel() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SLIDE — imagen grande (object-cover) a la derecha en desktop / arriba en móvil,
-// con un desvanecido suave hacia el blanco donde va el texto (el "split").
-// ─────────────────────────────────────────────────────────────────────────────
-function ProductSlide({
-  slide,
-  active,
-  priority,
-}: {
-  slide: HeroSlide;
-  active: boolean;
-  priority: boolean;
-}) {
-  return (
-    <div className="relative h-full w-full">
-      {/* Imagen grande: arriba en móvil, a la derecha en desktop (object-cover = llena, sin huecos) */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[52%]
-                   md:top-0 md:bottom-0 md:left-auto md:right-0 md:h-auto md:w-[66%] lg:w-[64%]"
-      >
-        <Image
-          src={slide.image}
-          alt={slide.imageAlt}
-          fill
-          priority={priority}
-          sizes="(max-width: 768px) 100vw, 60vw"
-          className="object-cover object-center"
-        />
-        {/* Split desvanecido — horizontal en desktop: el borde izquierdo de la imagen se funde en blanco */}
-        <div
-          className="hidden md:block absolute inset-y-0 left-0 w-[32%] pointer-events-none
-                     bg-gradient-to-r from-white via-white/35 to-transparent"
-        />
-        {/* Split desvanecido — vertical en móvil: el borde inferior de la imagen se funde en blanco */}
-        <div
-          className="md:hidden absolute inset-x-0 bottom-0 h-[50%] pointer-events-none
-                     bg-gradient-to-t from-white via-white/65 to-transparent"
-        />
-      </div>
-
-      {/* Texto */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-end md:items-center">
-        <div
-          className={`w-full max-w-md text-left pb-10 md:pb-0 ${active ? 'anim-stagger' : ''}`}
-          key={`${slide.id}-${active}`}
-        >
-          {slide.eyebrow && (
-            <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4 text-brand-orange">
-              {slide.eyebrow}
-            </p>
-          )}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight mb-4 md:mb-5 text-brand-navy">
-            {slide.title}{' '}
-            {slide.highlight && <span className="text-brand-orange">{slide.highlight}</span>}
-          </h1>
-          {slide.subtitle && (
-            <p className="text-base md:text-lg leading-relaxed mb-6 md:mb-8 max-w-md text-gray-600">
-              {slide.subtitle}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-3">
-            <CTAButton cta={slide.ctaPrimary} variant="primary" />
-            <CTAButton cta={slide.ctaSecondary} variant="whatsapp" />
-          </div>
-          {slide.showTrustBar && (
-            <div className="mt-6">
-              <TrustBar />
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // CTA BUTTON
 // ─────────────────────────────────────────────────────────────────────────────
-function CTAButton({ cta, variant }: { cta?: CTA; variant: 'primary' | 'whatsapp' | 'outline' }) {
-  if (!cta) return null;
+function CTAButton({ cta }: { cta: QuickCTA }) {
+  const Icon = cta.icon;
+  const isPrimary = cta.variant === 'primary';
 
-  const baseStyles =
-    'inline-flex items-center gap-2 h-11 md:h-12 px-5 md:px-6 rounded-full text-sm md:text-base font-semibold transition-all hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl';
-
-  const variantStyles = {
-    primary: 'bg-brand-orange hover:bg-orange-600 text-white',
-    whatsapp: 'bg-green-500 hover:bg-green-600 text-white',
-    outline: 'bg-white hover:bg-brand-light text-brand-navy border border-gray-200',
-  };
-
-  const isExternal = cta.href.startsWith('http');
-  const content = (
-    <>
-      {cta.icon === 'whatsapp' && <MessageCircle size={18} strokeWidth={2.5} />}
-      <span>{cta.label}</span>
-      {cta.icon === 'arrow' && <ArrowRight size={16} strokeWidth={2.5} />}
-    </>
-  );
-
-  if (isExternal) {
-    return (
-      <a href={cta.href} target="_blank" rel="noopener noreferrer" className={`${baseStyles} ${variantStyles[variant]}`}>
-        {content}
-      </a>
-    );
-  }
   return (
-    <Link href={cta.href} className={`${baseStyles} ${variantStyles[variant]}`}>
-      {content}
+    <Link
+      href={cta.href}
+      className={`group inline-flex items-center justify-between gap-1 h-10 px-3
+                  rounded-xl text-[11px] sm:text-xs font-semibold transition-all
+                  hover:scale-[1.02] active:scale-95 ${
+                    isPrimary
+                      ? 'bg-brand-turquoise hover:bg-brand-teal text-white shadow-md'
+                      : 'bg-white hover:bg-brand-light text-brand-navy border border-gray-200 shadow-sm'
+                  }`}
+    >
+      <span className="flex items-center gap-1.5 min-w-0">
+        <Icon
+          size={15}
+          strokeWidth={2.4}
+          className={`shrink-0 ${isPrimary ? 'text-white' : 'text-brand-turquoise'}`}
+        />
+        <span className="truncate">{cta.label}</span>
+      </span>
+      <ArrowRight
+        size={12}
+        strokeWidth={2.5}
+        className="shrink-0 transition-transform group-hover:translate-x-0.5"
+      />
     </Link>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TRUST BAR
-// ─────────────────────────────────────────────────────────────────────────────
-function TrustBar() {
-  const items = [
-    { icon: <Truck size={14} strokeWidth={2.5} />, label: 'Envíos a todo el Perú' },
-    { icon: <ShoppingBag size={14} strokeWidth={2.5} />, label: 'Compra desde 1 unidad' },
-    { icon: <CreditCard size={14} strokeWidth={2.5} />, label: 'Pago seguro' },
-  ];
-  return (
-    <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs md:text-sm text-gray-600">
-      {items.map((it) => (
-        <span key={it.label} className="flex items-center gap-1.5">
-          <span className="text-green-600">{it.icon}</span>
-          <span className="font-medium">{it.label}</span>
-        </span>
-      ))}
-    </div>
   );
 }

@@ -13,9 +13,6 @@ import {
 } from 'lucide-react';
 import { WHATSAPP } from '@/lib/config';
 
-// ─── Imágenes placeholder (reemplazar con fotos reales del cliente) ───────────
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=80';
-
 // ─── Hook animación scroll ────────────────────────────────────────────────────
 function useScrollReveal(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
@@ -123,58 +120,77 @@ export default function NosotrosPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ══════════════ HERO CON IMAGEN ══════════════ */}
-      <section className="relative bg-brand-navy overflow-hidden min-h-[520px] flex items-center">
-        {/* Imagen de fondo */}
-        <div className="absolute inset-0">
-          <Image
-            src={HERO_IMAGE}
-            alt="Plastitex — equipo de trabajo"
-            fill
-            className="object-cover opacity-20"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-brand-navy via-brand-navy/90 to-brand-navy/60" />
-        </div>
+      {/* ══════════════ HERO ESTILO FICHA TÉCNICA ══════════════ */}
+      <section className="relative bg-brand-navy overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 w-full">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-brand-orange/20 text-brand-orange
-                            text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
-              <Award size={14} strokeWidth={2.5} />
-              Sobre nosotros
+            {/* ── Columna texto ── */}
+            <div className="lg:col-span-5">
+              <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-3">
+                Sobre nosotros
+              </p>
+              <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-white leading-[1.1] mb-4">
+                Fabricamos productos que{' '}
+                <span className="text-brand-turquoise">impulsan marcas</span>{' '}
+                y construyen relaciones
+              </h1>
+              <p className="text-white/70 text-sm md:text-base leading-relaxed mb-6 max-w-lg">
+                Más de 14 años ayudando a empresas de todo el Perú a comunicar su identidad
+                a través de productos personalizados de alta calidad.
+              </p>
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { value: '14+', label: 'Años de experiencia', icon: Award },
+                  { value: '500+', label: 'Clientes satisfechos', icon: Users },
+                  { value: '42+', label: 'Modelos de productos', icon: Package },
+                  { value: '100%', label: 'Fabricación propia', icon: Factory },
+                ].map((stat) => (
+                  <div key={stat.label} className="text-center sm:text-left">
+                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-2 mx-auto sm:mx-0">
+                      <stat.icon size={16} className="text-brand-turquoise" strokeWidth={2} />
+                    </div>
+                    <p className="text-xl font-bold text-white leading-none mb-0.5">{stat.value}</p>
+                    <p className="text-[10px] text-white/60 leading-tight">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Transformamos ideas<br />
-              <span className="text-brand-orange">en Merchandising</span>
-            </h1>
-            <p className="text-white/70 text-lg leading-relaxed max-w-2xl mb-10">
-              Somos una empresa peruana con más de{' '}
-              <strong className="text-white">14 años de experiencia</strong>,
-              expertos en la creación y fabricación de productos personalizados
-              promocionales de alto impacto para marcas que quieren destacar.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href="/catalogo"
-                className="inline-flex items-center gap-2 bg-brand-orange hover:bg-orange-500
-                           text-white font-bold px-6 py-3.5 rounded-xl transition-all
-                           hover:scale-105 active:scale-95 shadow-lg shadow-brand-orange/30"
-              >
-                Ver catálogo
-                <ChevronRight size={16} strokeWidth={2.5} />
-              </Link>
-              <a
-                href={WHATSAPP.baseUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20
-                           text-white font-bold px-6 py-3.5 rounded-xl transition-all
-                           border border-white/20"
-              >
-                <MessageCircle size={16} strokeWidth={2.5} />
-                Contáctanos
-              </a>
+
+            {/* ── Columna imagen ── */}
+            <div className="lg:col-span-7 relative">
+              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
+                <Image
+                  src="/images/nosotros-hero.png"
+                  alt="Plastitex — producción propia de artículos publicitarios"
+                  width={1200}
+                  height={800}
+                  className="w-full h-auto object-cover"
+                  priority
+                />
+              </div>
+
+              {/* Tarjeta flotante */}
+              <div className="absolute -bottom-4 -right-2 sm:bottom-6 sm:right-6 w-[260px] sm:w-[300px]
+                              bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-5 z-10">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-brand-navy font-bold text-sm sm:text-base mb-1">
+                      Producción 100% propia
+                    </p>
+                    <p className="text-gray-500 text-xs leading-snug">
+                      Controlamos cada etapa del proceso para garantizar calidad, plazos y precios competitivos.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

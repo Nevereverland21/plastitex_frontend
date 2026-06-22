@@ -2,14 +2,11 @@
 
 // components/ui/FeaturedProducts.tsx
 // ─────────────────────────────────────────────────────────────────────────────
-// REDISEÑO:
-//   - Sin negative margin (antes -mt-20 z-30 forzaba que se montara sobre un
-//     hero oscuro que ya no existe)
-//   - Fondo blanco limpio, transición natural con el hero claro de arriba
-//   - Card de INVITACIÓN al final cuando hay menos de 4 productos.
-//     Rellena el grid sin mentir sobre el inventario.
-//   - Mejor estado de error (con fondo claro, no overlay oscuro)
-//   - Animación de entrada con stagger
+// Sección de productos destacados optimizada para aparecer above the fold.
+//   - Padding reducido
+//   - Header compacto con acción clara
+//   - Grid denso
+//   - Card de invitación al catálogo cuando hay pocos productos
 // ─────────────────────────────────────────────────────────────────────────────
 
 import Link from 'next/link';
@@ -23,9 +20,7 @@ interface Props {
   error?: boolean;
 }
 
-// Cuántos productos máximo mostramos antes de "Ver todos"
 const MAX_VISIBLE = 8;
-// Bajo este número agregamos card de invitación al final
 const INVITATION_THRESHOLD = 4;
 
 export default function FeaturedProducts({
@@ -33,31 +28,25 @@ export default function FeaturedProducts({
   loading = false,
   error = false,
 }: Props) {
-  // ─── Loading ──────────────────────────────────────────────────────────────
   if (loading) return <LoadingState />;
-
-  // ─── Error ────────────────────────────────────────────────────────────────
   if (error) return <ErrorState />;
-
-  // ─── Vacío ────────────────────────────────────────────────────────────────
   if (products.length === 0) return null;
 
-  // ─── Render ───────────────────────────────────────────────────────────────
   const visible = products.slice(0, MAX_VISIBLE);
   const showInvitation = visible.length < INVITATION_THRESHOLD;
 
   return (
-    <section className="py-14 md:py-20 bg-white" aria-labelledby="featured-heading">
+    <section className="pt-3 md:pt-4 pb-8 md:pb-10 bg-white" aria-labelledby="featured-heading">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <header className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        {/* Header compacto */}
+        <header className="flex items-end justify-between gap-4 mb-3">
           <div>
-            <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-2">
-              Lo más popular
+            <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
+              Lo más pedido
             </p>
             <h2
               id="featured-heading"
-              className="text-2xl sm:text-3xl md:text-4xl font-bold text-brand-navy tracking-tight"
+              className="text-lg sm:text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
             >
               Productos destacados
             </h2>
@@ -66,7 +55,7 @@ export default function FeaturedProducts({
           <Link
             href="/catalogo"
             className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold
-                       text-brand-navy hover:text-brand-orange transition-colors group"
+                       text-brand-turquoise hover:text-brand-teal transition-colors group"
           >
             Ver todos
             <ArrowRight
@@ -77,14 +66,14 @@ export default function FeaturedProducts({
           </Link>
         </header>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+        {/* Grid denso: aprovechamos cards más pequeñas */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
           {visible.map((product, i) => (
             <div
               key={product.id}
               className="animate-fade-in-up"
               style={{
-                animationDelay: `${i * 60}ms`,
+                animationDelay: `${i * 40}ms`,
                 animationFillMode: 'both',
               }}
             >
@@ -92,12 +81,11 @@ export default function FeaturedProducts({
             </div>
           ))}
 
-          {/* Card de invitación cuando hay pocos productos */}
           {showInvitation && (
             <div
               className="animate-fade-in-up"
               style={{
-                animationDelay: `${visible.length * 60}ms`,
+                animationDelay: `${visible.length * 40}ms`,
                 animationFillMode: 'both',
               }}
             >
@@ -106,13 +94,13 @@ export default function FeaturedProducts({
           )}
         </div>
 
-        {/* CTA mobile (solo cuando no se ve el "Ver todos" del header) */}
-        <div className="sm:hidden mt-8 text-center">
+        {/* CTA mobile */}
+        <div className="sm:hidden mt-6 text-center">
           <Link
             href="/catalogo"
             className="inline-flex items-center gap-2 bg-brand-navy text-white
-                       px-6 py-3 rounded-full font-semibold text-sm
-                       hover:bg-brand-orange transition-colors"
+                       px-5 py-2.5 rounded-full font-semibold text-sm
+                       hover:bg-brand-turquoise transition-colors"
           >
             Ver todos los productos
             <ArrowRight size={15} strokeWidth={2.5} />
@@ -123,52 +111,45 @@ export default function FeaturedProducts({
   );
 }
 
-// ═════════════════════════════════════════════════════════════════════════════
-// Subcomponentes
-// ═════════════════════════════════════════════════════════════════════════════
-
-// Card de invitación — aparece cuando hay menos de 4 productos destacados
 function InvitationCard() {
   return (
     <Link
       href="/catalogo"
-      className="group relative h-full min-h-[420px] flex flex-col items-center justify-center gap-4
+      className="group relative h-full min-h-[220px] flex flex-col items-center justify-center gap-2
                  bg-gradient-to-br from-brand-light to-white
-                 border-2 border-dashed border-gray-200 hover:border-brand-orange/60
-                 rounded-2xl p-6 transition-all duration-300
-                 hover:-translate-y-1 hover:shadow-xl"
+                 border-2 border-dashed border-gray-200 hover:border-brand-turquoise/60
+                 rounded-xl p-4 transition-all duration-300
+                 hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="w-16 h-16 bg-brand-orange/10 group-hover:bg-brand-orange rounded-2xl
-                      flex items-center justify-center transition-all duration-300
-                      group-hover:scale-110">
+      <div className="w-12 h-12 bg-brand-turquoise/10 group-hover:bg-brand-turquoise rounded-lg
+                      flex items-center justify-center transition-all duration-300 group-hover:scale-110">
         <LayoutGrid
-          size={28}
+          size={20}
           strokeWidth={2}
-          className="text-brand-orange group-hover:text-white transition-colors"
+          className="text-brand-turquoise group-hover:text-white transition-colors"
         />
       </div>
 
       <div className="text-center">
-        <h3 className="text-base font-bold text-brand-navy mb-1">
+        <h3 className="text-xs font-bold text-brand-navy mb-0.5">
           Explora el catálogo
         </h3>
-        <p className="text-sm text-gray-600 leading-snug max-w-[200px] mx-auto">
+        <p className="text-[10px] text-gray-600 leading-snug max-w-[140px] mx-auto">
           Descubre todos nuestros productos personalizables
         </p>
       </div>
 
       <span
-        className="inline-flex items-center gap-1.5 text-sm font-semibold
-                   text-brand-orange group-hover:gap-2.5 transition-all"
+        className="inline-flex items-center gap-1 text-xs font-semibold
+                   text-brand-turquoise group-hover:gap-1.5 transition-all"
       >
         Ver todo
-        <ArrowRight size={15} strokeWidth={2.5} />
+        <ArrowRight size={12} strokeWidth={2.5} />
       </span>
     </Link>
   );
 }
 
-// ─── Skeleton de carga ───────────────────────────────────────────────────────
 function ProductSkeleton() {
   return (
     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse">
@@ -176,13 +157,13 @@ function ProductSkeleton() {
         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.5s_infinite]
                         bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       </div>
-      <div className="p-5 flex flex-col gap-3">
-        <div className="h-4 bg-gray-200 rounded-full w-3/4" />
+      <div className="p-4 flex flex-col gap-2">
+        <div className="h-3 bg-gray-200 rounded-full w-3/4" />
         <div className="h-3 bg-gray-100 rounded-full w-full" />
         <div className="h-px bg-gray-100 mt-1" />
         <div className="flex items-center justify-between mt-1">
-          <div className="h-6 bg-gray-200 rounded-full w-20" />
-          <div className="h-9 bg-gray-200 rounded-xl w-24" />
+          <div className="h-5 bg-gray-200 rounded-full w-16" />
+          <div className="h-8 bg-gray-200 rounded-xl w-20" />
         </div>
       </div>
     </div>
@@ -191,13 +172,13 @@ function ProductSkeleton() {
 
 function LoadingState() {
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-10 md:py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <div className="h-3 bg-gray-200 rounded-full w-24 mb-2 animate-pulse" />
-          <div className="h-9 bg-gray-200 rounded-full w-64 animate-pulse" />
+        <div className="mb-4">
+          <div className="h-3 bg-gray-200 rounded-full w-20 mb-1.5 animate-pulse" />
+          <div className="h-7 bg-gray-200 rounded-full w-48 animate-pulse" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <ProductSkeleton key={i} />
           ))}
@@ -209,22 +190,22 @@ function LoadingState() {
 
 function ErrorState() {
   return (
-    <section className="py-14 md:py-20 bg-white">
+    <section className="py-10 md:py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-brand-light border border-gray-200 rounded-2xl p-10 text-center">
-          <div className="w-14 h-14 bg-brand-orange/10 border border-brand-orange/20 rounded-full
-                          flex items-center justify-center mx-auto mb-4">
-            <RefreshCw size={24} className="text-brand-orange" />
+        <div className="bg-brand-light border border-gray-200 rounded-2xl p-8 text-center">
+          <div className="w-12 h-12 bg-brand-turquoise/10 border border-brand-turquoise/20 rounded-full
+                          flex items-center justify-center mx-auto mb-3">
+            <RefreshCw size={20} className="text-brand-turquoise" />
           </div>
-          <p className="text-brand-navy text-base font-semibold mb-1">
+          <p className="text-brand-navy text-sm font-semibold mb-1">
             No se pudieron cargar los productos
           </p>
-          <p className="text-gray-500 text-sm mb-5">
+          <p className="text-gray-500 text-xs mb-4">
             Verifica tu conexión o intenta más tarde
           </p>
           <Link
             href="/catalogo"
-            className="inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-2.5 rounded-full text-sm font-semibold
+            className="inline-flex items-center gap-2 bg-brand-turquoise text-white px-5 py-2 rounded-full text-sm font-semibold
                        hover:scale-105 transition-all"
           >
             Ver catálogo completo

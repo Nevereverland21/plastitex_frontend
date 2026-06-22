@@ -30,25 +30,25 @@ const CLIENTS: Client[] = [
 ];
 
 
-const TRACK_CLASSES = 'gap-14 pr-14'; // 14 * 4 = 56px
+const TRACK_CLASSES = 'gap-10 pr-10'; // 10 * 4 = 40px
 
 export default function ClientLogos() {
   if (CLIENTS.length === 0) return null;
 
   return (
     <section
-      className="bg-white py-14 md:py-16 border-t border-gray-100"
+      className="bg-white py-8 md:py-10 border-t border-gray-100"
       aria-labelledby="clients-heading"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <header className="text-center mb-10">
-          <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-2">
+        <header className="text-center mb-6">
+          <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
             Confían en nosotros
           </p>
           <h2
             id="clients-heading"
-            className="text-2xl sm:text-3xl font-bold text-brand-navy tracking-tight"
+            className="text-lg sm:text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
           >
             Marcas que llevan nuestro merchandising
           </h2>

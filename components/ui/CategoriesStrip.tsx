@@ -51,8 +51,8 @@ const CATEGORY_ICONS: Record<string, IconType> = {
 };
 
 // Ancho fijo de cada card en píxeles
-const CARD_WIDTH = 180;
-const CARD_GAP = 16; // gap-4 en Tailwind
+const CARD_WIDTH = 150;
+const CARD_GAP = 12; // gap-3 en Tailwind
 
 interface Props {
   categories: Category[];
@@ -115,19 +115,19 @@ export default function CategoriesStrip({ categories }: Props) {
 
   return (
     <section
-      className="bg-white border-b border-gray-100 py-8 md:py-10"
+      className="bg-white border-b border-gray-100 py-6 md:py-8"
       aria-labelledby="categories-strip-heading"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* ─── Header con flechas a la derecha ─── */}
-        <header className="flex items-end justify-between gap-4 mb-5">
+        <header className="flex items-end justify-between gap-4 mb-4">
           <div>
-            <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-1">
+            <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
               Explora por categoría
             </p>
             <h2
               id="categories-strip-heading"
-              className="text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
+              className="text-lg md:text-xl font-bold text-brand-navy tracking-tight"
             >
               Encuentra lo que buscas
             </h2>
@@ -138,7 +138,7 @@ export default function CategoriesStrip({ categories }: Props) {
             <Link
               href="/catalogo"
               className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold
-                         text-brand-navy hover:text-brand-orange transition-colors group mr-2"
+                         text-brand-navy hover:text-brand-turquoise transition-colors group mr-2"
             >
               Ver todas
               <ArrowRight
@@ -155,25 +155,25 @@ export default function CategoriesStrip({ categories }: Props) {
                   onClick={() => scrollByCards('left')}
                   disabled={!canScrollLeft}
                   aria-label="Categorías anteriores"
-                  className="w-9 h-9 rounded-full bg-white border border-gray-200
+                  className="w-8 h-8 rounded-full bg-white border border-gray-200
                              flex items-center justify-center
-                             text-brand-navy hover:border-brand-navy hover:text-brand-orange
+                             text-brand-navy hover:border-brand-turquoise hover:text-brand-turquoise
                              disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:text-brand-navy
                              transition-all"
                 >
-                  <ChevronLeft size={16} strokeWidth={2.5} />
+                  <ChevronLeft size={14} strokeWidth={2.5} />
                 </button>
                 <button
                   onClick={() => scrollByCards('right')}
                   disabled={!canScrollRight}
                   aria-label="Más categorías"
-                  className="w-9 h-9 rounded-full bg-brand-navy
+                  className="w-8 h-8 rounded-full bg-brand-navy
                              flex items-center justify-center text-white
-                             hover:bg-brand-orange
+                             hover:bg-brand-turquoise
                              disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-brand-navy
                              transition-all"
                 >
-                  <ChevronRight size={16} strokeWidth={2.5} />
+                  <ChevronRight size={14} strokeWidth={2.5} />
                 </button>
               </div>
             )}
@@ -183,7 +183,7 @@ export default function CategoriesStrip({ categories }: Props) {
         {/* ─── Carrusel ─── */}
         <div
           ref={scrollerRef}
-          className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide
+          className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide
                      -mx-4 px-4 sm:mx-0 sm:px-0"
         >
           {categories.map((cat) => (
@@ -207,9 +207,9 @@ function CategoryCard({ category }: { category: Category }) {
       style={{ width: `${CARD_WIDTH}px` }}
       className="
         group flex-shrink-0 snap-start
-        bg-white border border-gray-200 hover:border-brand-orange
-        rounded-2xl p-5
-        flex flex-col items-center justify-center gap-3
+        bg-white border border-gray-200 hover:border-brand-turquoise
+        rounded-xl p-4
+        flex flex-col items-center justify-center gap-2
         aspect-square
         transition-all duration-300
         hover:-translate-y-1 hover:shadow-lg
@@ -219,22 +219,22 @@ function CategoryCard({ category }: { category: Category }) {
       {/* Ícono en círculo */}
       <div
         className="
-          w-14 h-14 rounded-xl
-          bg-brand-light group-hover:bg-brand-orange
+          w-12 h-12 rounded-lg
+          bg-brand-light group-hover:bg-brand-turquoise
           flex items-center justify-center
           transition-all duration-300 group-hover:scale-110
         "
       >
         <Icon
-          size={26}
+          size={22}
           strokeWidth={1.8}
           className="text-brand-navy group-hover:text-white transition-colors"
         />
       </div>
 
       {/* Nombre */}
-      <span className="text-sm font-semibold text-brand-navy text-center leading-tight
-                       group-hover:text-brand-orange transition-colors line-clamp-2">
+      <span className="text-xs font-semibold text-brand-navy text-center leading-tight
+                       group-hover:text-brand-turquoise transition-colors line-clamp-2">
         {category.name}
       </span>
     </Link>

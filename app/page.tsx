@@ -2,6 +2,7 @@ import { getProductsServer, getCategoriesServer } from '@/lib/api';
 import HeroCarousel from '@/components/ui/HeroCarousel';
 import CategoriesStrip from '@/components/ui/CategoriesStrip';
 import FeaturedProducts from '@/components/ui/FeaturedProducts';
+import CorporateBanner from '@/components/ui/CorporateBanner';
 import ClientLogos from '@/components/ui/ClientLogos';
 import WhyUs from '@/components/ui/WhyUs';
 
@@ -14,9 +15,11 @@ export default async function Home() {
 
   return (
     <>
+      {/* Banner compacto → productos destacados inmediatamente. */}
       <HeroCarousel />
-      <CategoriesStrip categories={categories} />
       <FeaturedProducts products={featured} />
+      <CorporateBanner />
+      <CategoriesStrip categories={categories} />
       <ClientLogos />
       <WhyUs />
     </>
