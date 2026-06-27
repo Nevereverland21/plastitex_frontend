@@ -51,7 +51,7 @@ export default function Loading() {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo-plastitex.png"
+            src="/logo-plastitex.webp"
             alt="Plastitex"
             style={{
               height: '52px',

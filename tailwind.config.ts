@@ -58,12 +58,29 @@ const config: Config = {
           '0%':   { transform: 'translateX(0)' },
           '100%': { transform: 'translateX(-50%)' },
         },
+        // Flotación suave para el círculo y la tarjeta del hero "nosotros"
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-12px)' },
+        },
+        'float-soft': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-7px)' },
+        },
+        // Pulso del anillo decorativo
+        'ring-pulse': {
+          '0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+          '50%':      { opacity: '0.6', transform: 'scale(1.025)' },
+        },
       },
       animation: {
-        'fade-in-up': 'fade-in-up 0.4s ease-out',
-        'fade-in':    'fade-in 0.4s ease-out both',
+        'fade-in-up': 'fade-in-up 0.6s ease-out both',
+        'fade-in':    'fade-in 0.5s ease-out both',
         shimmer:      'shimmer 1.5s infinite',
         marquee:      'marquee 40s linear infinite',
+        float:        'float 6s ease-in-out infinite',
+        'float-soft': 'float-soft 5s ease-in-out infinite',
+        'ring-pulse': 'ring-pulse 4.5s ease-in-out infinite',
       },
     },
   },

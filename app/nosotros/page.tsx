@@ -120,74 +120,126 @@ export default function NosotrosPage() {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ══════════════ HERO ESTILO FICHA TÉCNICA ══════════════ */}
+      {/* ══════════════ HERO CON PARTICIÓN CIRCULAR ══════════════ */}
       <section className="relative bg-brand-navy overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-14">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+        {/* Brillos decorativos: rellenan el lado derecho en pantallas anchas */}
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-[680px] h-[680px] max-w-[55vw]
+                        rounded-full bg-brand-turquoise/10 blur-[130px] pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-[420px] h-[420px] rounded-full
+                        bg-brand-sky/10 blur-[120px] pointer-events-none" />
+
+        <div className="container-wide py-14 md:py-20 lg:py-24 relative">
+          {/* Grid centrado por el contenedor: texto izquierda + círculo derecha */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-10 items-center">
 
             {/* ── Columna texto ── */}
-            <div className="lg:col-span-5">
-              <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-3">
+            <div>
+              <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-3
+                            animate-fade-in-up">
                 Sobre nosotros
               </p>
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-white leading-[1.1] mb-4">
+              <h1 className="text-3xl sm:text-4xl lg:text-[2.7rem] font-bold text-white leading-[1.1] mb-4
+                             animate-fade-in-up [animation-delay:80ms]">
                 Fabricamos productos que{' '}
                 <span className="text-brand-turquoise">impulsan marcas</span>{' '}
                 y construyen relaciones
               </h1>
-              <p className="text-white/70 text-sm md:text-base leading-relaxed mb-6 max-w-lg">
+              <p className="text-white/70 text-sm md:text-base leading-relaxed mb-7 max-w-lg
+                            animate-fade-in-up [animation-delay:160ms]">
                 Más de 14 años ayudando a empresas de todo el Perú a comunicar su identidad
-                a través de productos personalizados de alta calidad.
+                a través de productos personalizados de alta calidad, con fabricación
+                100% propia y control en cada etapa.
               </p>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-8 animate-fade-in-up [animation-delay:240ms]">
+                <Link
+                  href="/catalogo"
+                  className="group inline-flex items-center justify-center gap-2 bg-brand-turquoise hover:bg-brand-teal
+                             text-white font-semibold px-6 py-3.5 rounded-xl transition-all
+                             hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-turquoise/20"
+                >
+                  Ver catálogo
+                  <ChevronRight size={16} strokeWidth={2.5} className="transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <a
+                  href={WHATSAPP.link('Hola Plastitex, me gustaría cotizar un pedido')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20
+                             text-white font-semibold px-6 py-3.5 rounded-xl transition-all
+                             border border-white/20 backdrop-blur-sm"
+                >
+                  <MessageCircle size={16} strokeWidth={2.5} />
+                  Cotizar ahora
+                </a>
+              </div>
+
+              {/* Fila de datos rápidos (no son las cifras de StatsSection) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-white/10
+                              animate-fade-in-up [animation-delay:320ms]">
                 {[
-                  { value: '14+', label: 'Años de experiencia', icon: Award },
-                  { value: '500+', label: 'Clientes satisfechos', icon: Users },
-                  { value: '42+', label: 'Modelos de productos', icon: Package },
-                  { value: '100%', label: 'Fabricación propia', icon: Factory },
-                ].map((stat) => (
-                  <div key={stat.label} className="text-center sm:text-left">
-                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center mb-2 mx-auto sm:mx-0">
-                      <stat.icon size={16} className="text-brand-turquoise" strokeWidth={2} />
+                  { icon: Flag,    title: 'Hecho en Perú',        sub: 'Con orgullo y compromiso' },
+                  { icon: Factory, title: 'Producción propia',    sub: 'Controlamos cada etapa' },
+                  { icon: Truck,   title: 'Envíos a todo el Perú', sub: 'Cumplimos tus tiempos' },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                      <item.icon size={16} className="text-brand-turquoise" strokeWidth={2} />
                     </div>
-                    <p className="text-xl font-bold text-white leading-none mb-0.5">{stat.value}</p>
-                    <p className="text-[10px] text-white/60 leading-tight">{stat.label}</p>
+                    <div>
+                      <p className="text-white text-sm font-bold leading-tight">{item.title}</p>
+                      <p className="text-white/50 text-xs leading-tight">{item.sub}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* ── Columna imagen ── */}
-            <div className="lg:col-span-7 relative">
-              <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/30">
-                <Image
-                  src="/images/nosotros-hero.png"
-                  alt="Plastitex — producción propia de artículos publicitarios"
-                  width={1200}
-                  height={800}
-                  className="w-full h-auto object-cover"
-                  priority
-                />
-              </div>
+            {/* ── Columna imagen: PARTICIÓN CIRCULAR ── */}
+            <div className="relative flex justify-center lg:justify-end animate-fade-in [animation-delay:200ms]">
+              <div className="relative w-full max-w-[560px] aspect-square">
+                {/* Grupo flotante: círculo + anillos */}
+                <div className="absolute inset-0 animate-float">
+                  {/* Glow circular detrás */}
+                  <div className="absolute inset-6 rounded-full bg-brand-turquoise/25 blur-3xl" />
+                  {/* Anillos decorativos */}
+                  <div className="absolute -inset-6 rounded-full border border-brand-turquoise/30 animate-ring-pulse" />
+                  <div className="absolute -inset-2.5 rounded-full border border-white/10" />
 
-              {/* Tarjeta flotante */}
-              <div className="absolute -bottom-4 -right-2 sm:bottom-6 sm:right-6 w-[260px] sm:w-[300px]
-                              bg-white rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-5 z-10">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
+                  {/* Imagen recortada en círculo */}
+                  <div className="relative w-full h-full rounded-full overflow-hidden
+                                  ring-4 ring-white/10 shadow-2xl shadow-black/50">
+                    <Image
+                      src="/images/nosotros-hero.webp"
+                      alt="Plastitex — producción propia de artículos publicitarios"
+                      fill
+                      sizes="(max-width: 1024px) 90vw, 560px"
+                      className="object-cover"
+                      style={{ objectPosition: 'center' }}
+                      priority
+                    />
                   </div>
-                  <div>
-                    <p className="text-brand-navy font-bold text-sm sm:text-base mb-1">
-                      Producción 100% propia
-                    </p>
-                    <p className="text-gray-500 text-xs leading-snug">
-                      Controlamos cada etapa del proceso para garantizar calidad, plazos y precios competitivos.
-                    </p>
+                </div>
+
+                {/* Tarjeta flotante — lado derecho, no tapa la botella */}
+                <div className="absolute bottom-4 -right-2 sm:bottom-8 sm:-right-8 w-[230px] sm:w-[265px]
+                                bg-white rounded-xl sm:rounded-2xl shadow-2xl shadow-black/20 p-4 sm:p-5 z-10
+                                animate-float-soft">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-brand-navy font-bold text-sm sm:text-base mb-1 leading-tight">
+                        Producción 100% propia
+                      </p>
+                      <p className="text-gray-500 text-xs leading-snug">
+                        Controlamos cada etapa del proceso para garantizar calidad y plazos.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -201,7 +253,7 @@ export default function NosotrosPage() {
 
       {/* ══════════════ QUIÉNES SOMOS ══════════════ */}
       <section className="py-20 md:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-wide">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
 
             <RevealSection>
@@ -268,7 +320,7 @@ export default function NosotrosPage() {
 
       {/* ══════════════ MISIÓN Y VISIÓN ══════════════ */}
       <section id="mision" className="py-20 md:py-28 bg-brand-light">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-wide">
           <RevealSection>
             <div className="text-center mb-14">
               <span className="text-brand-orange text-xs font-bold uppercase tracking-[0.2em] mb-3 block">
@@ -335,7 +387,7 @@ export default function NosotrosPage() {
 
       {/* ══════════════ VALORES ══════════════ */}
       <section className="py-20 md:py-28 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-wide">
           <RevealSection>
             <div className="text-center mb-14">
               <span className="text-brand-orange text-xs font-bold uppercase tracking-[0.2em] mb-3 block">
@@ -417,7 +469,7 @@ function StatsSection() {
 
   return (
     <section ref={ref} className="py-16 bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-wide">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
           {STATS.map((stat, i) => (
             <div

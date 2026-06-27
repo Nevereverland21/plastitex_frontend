@@ -36,17 +36,17 @@ export default function FeaturedProducts({
   const showInvitation = visible.length < INVITATION_THRESHOLD;
 
   return (
-    <section className="pt-3 md:pt-4 pb-8 md:pb-10 bg-white" aria-labelledby="featured-heading">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header compacto */}
-        <header className="flex items-end justify-between gap-4 mb-3">
+    <section className="pt-4 md:pt-5 pb-10 md:pb-12 bg-white" aria-labelledby="featured-heading">
+      <div className="container-wide">
+        {/* Header */}
+        <header className="flex items-end justify-between gap-4 mb-4">
           <div>
-            <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
+            <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-1">
               Lo más pedido
             </p>
             <h2
               id="featured-heading"
-              className="text-lg sm:text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold text-brand-navy tracking-tight"
             >
               Productos destacados
             </h2>
@@ -59,15 +59,15 @@ export default function FeaturedProducts({
           >
             Ver todos
             <ArrowRight
-              size={15}
+              size={16}
               strokeWidth={2.5}
               className="transition-transform group-hover:translate-x-0.5"
             />
           </Link>
         </header>
 
-        {/* Grid denso: aprovechamos cards más pequeñas */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
+        {/* Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
           {visible.map((product, i) => (
             <div
               key={product.id}
@@ -115,36 +115,36 @@ function InvitationCard() {
   return (
     <Link
       href="/catalogo"
-      className="group relative h-full min-h-[220px] flex flex-col items-center justify-center gap-2
+      className="group relative h-full min-h-[240px] flex flex-col items-center justify-center gap-3
                  bg-gradient-to-br from-brand-light to-white
                  border-2 border-dashed border-gray-200 hover:border-brand-turquoise/60
-                 rounded-xl p-4 transition-all duration-300
+                 rounded-xl p-5 transition-all duration-300
                  hover:-translate-y-1 hover:shadow-lg"
     >
-      <div className="w-12 h-12 bg-brand-turquoise/10 group-hover:bg-brand-turquoise rounded-lg
+      <div className="w-14 h-14 bg-brand-turquoise/10 group-hover:bg-brand-turquoise rounded-xl
                       flex items-center justify-center transition-all duration-300 group-hover:scale-110">
         <LayoutGrid
-          size={20}
+          size={24}
           strokeWidth={2}
           className="text-brand-turquoise group-hover:text-white transition-colors"
         />
       </div>
 
       <div className="text-center">
-        <h3 className="text-xs font-bold text-brand-navy mb-0.5">
+        <h3 className="text-sm font-bold text-brand-navy mb-1">
           Explora el catálogo
         </h3>
-        <p className="text-[10px] text-gray-600 leading-snug max-w-[140px] mx-auto">
+        <p className="text-xs text-gray-600 leading-snug max-w-[160px] mx-auto">
           Descubre todos nuestros productos personalizables
         </p>
       </div>
 
       <span
-        className="inline-flex items-center gap-1 text-xs font-semibold
+        className="inline-flex items-center gap-1 text-sm font-semibold
                    text-brand-turquoise group-hover:gap-1.5 transition-all"
       >
         Ver todo
-        <ArrowRight size={12} strokeWidth={2.5} />
+        <ArrowRight size={14} strokeWidth={2.5} />
       </span>
     </Link>
   );
@@ -173,7 +173,7 @@ function ProductSkeleton() {
 function LoadingState() {
   return (
     <section className="py-10 md:py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-wide">
         <div className="mb-4">
           <div className="h-3 bg-gray-200 rounded-full w-20 mb-1.5 animate-pulse" />
           <div className="h-7 bg-gray-200 rounded-full w-48 animate-pulse" />
@@ -191,7 +191,7 @@ function LoadingState() {
 function ErrorState() {
   return (
     <section className="py-10 md:py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-wide">
         <div className="bg-brand-light border border-gray-200 rounded-2xl p-8 text-center">
           <div className="w-12 h-12 bg-brand-turquoise/10 border border-brand-turquoise/20 rounded-full
                           flex items-center justify-center mx-auto mb-3">

@@ -38,5 +38,8 @@ next-env.d.ts
 
 Dockerfile
 
+# Carpetas de pruebas / referencia — solo locales, no se pushean
 /paginaweb
 /bugs
+/Productos
+/estructura.txt

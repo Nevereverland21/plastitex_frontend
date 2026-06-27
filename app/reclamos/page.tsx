@@ -71,7 +71,7 @@ export default function ReclamosPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-brand-navy via-brand-navy/90 to-brand-navy/60" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24 w-full">
+        <div className="relative container-wide py-20 md:py-24 w-full">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 bg-white/10 text-white/80
                             text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
@@ -92,7 +92,7 @@ export default function ReclamosPage() {
 
       {/* ══════════════ AVISO LEGAL ══════════════ */}
       <div className="bg-blue-50 border-b border-blue-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="container-wide py-4">
           <div className="flex items-start gap-3">
             <Shield size={18} className="text-blue-500 flex-shrink-0 mt-0.5" strokeWidth={2.5} />
             <p className="text-sm text-blue-800">

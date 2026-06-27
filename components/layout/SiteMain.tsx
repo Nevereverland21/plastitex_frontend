@@ -1,15 +1,15 @@
 /**
  * Envuelve el contenido principal y aplica el offset del header fijo.
  * El header es sólido en todas las páginas e incluye:
- *   - Mobile: navbar (80px) + buscador mobile (~40px)  → ~120px
- *   - Tablet: navbar (80px)                            → 80px
- *   - Desktop: top bar (32px) + navbar (80px) + sub-nav (44px) → 156px
+ *   - Mobile: navbar (72px) + buscador mobile (~44px)  → ~116px
+ *   - Tablet: navbar (72px)                            → 72px
+ *   - Desktop: top bar (36px) + navbar (96px) + sub-nav (52px) → 184px
  */
 export default function SiteMain({ children }: { children: React.ReactNode }) {
   return (
     <main
       id="main-content"
-      className="pt-[132px] md:pt-20 lg:pt-[156px]"
+      className="pt-[148px] md:pt-[92px] lg:pt-[188px]"
     >
       {children}
     </main>

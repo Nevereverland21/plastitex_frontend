@@ -16,17 +16,17 @@ const CLIENTS: Client[] = [
     { name: 'Alpaca',           src: '/clients/alpaca-logo.png',           width: 100 },
     { name: 'Caja Huancayo', src: '/clients/caja-huancayo-logo.png', width: 130 },
     { name: 'American Colors', src: '/clients/American-logo.svg', width: 120 },
-    { name: 'Entel', src: '/clients/Entel_logo_pe.png', width: 100 },
-    { name: 'Claro', src: '/clients/claro_logo.png', width: 90 },
-    { name: 'Demonio', src: '/clients/demonio2_logo.png', width: 90 },
+    { name: 'Entel', src: '/clients/Entel_logo_pe.webp', width: 100 },
+    { name: 'Claro', src: '/clients/claro_logo.webp', width: 90 },
+    { name: 'Demonio', src: '/clients/demonio2_logo.webp', width: 90 },
     { name: 'Coca Cola', src: '/clients/cocacola_logo.png', width: 120 },
-    { name: 'Interseguro', src: '/clients/interseguro_logo.png', width: 100 },
-    { name: 'Samsung', src: '/clients/Samsung_logo2.png', width: 130 },
-    { name: 'SmartFit', src: '/clients/Smart_Fit_logo.png', width: 100 },
-    { name: 'Dominos Pizza', src: '/clients/Dominos_pizza_logo.png', width: 100 },
-    { name: 'PetroPeru', src: '/clients/Petroperu_logo.png', width: 100 },
-    { name: 'Movistar', src: '/clients/movistar_logo.png', width: 100 },
-    { name: 'Rimac', src: '/clients/rimac_logo.jpg', width: 100 },
+    { name: 'Interseguro', src: '/clients/interseguro_logo.webp', width: 100 },
+    { name: 'Samsung', src: '/clients/Samsung_logo2.webp', width: 130 },
+    { name: 'SmartFit', src: '/clients/Smart_Fit_logo.webp', width: 100 },
+    { name: 'Dominos Pizza', src: '/clients/Dominos_pizza_logo.webp', width: 100 },
+    { name: 'PetroPeru', src: '/clients/Petroperu_logo.webp', width: 100 },
+    { name: 'Movistar', src: '/clients/movistar_logo.webp', width: 100 },
+    { name: 'Rimac', src: '/clients/rimac_logo.webp', width: 100 },
 ];
 
 
@@ -40,15 +40,15 @@ export default function ClientLogos() {
       className="bg-white py-8 md:py-10 border-t border-gray-100"
       aria-labelledby="clients-heading"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-wide">
         {/* Header */}
         <header className="text-center mb-6">
-          <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-1">
+          <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-1">
             Confían en nosotros
           </p>
           <h2
             id="clients-heading"
-            className="text-lg sm:text-xl md:text-2xl font-bold text-brand-navy tracking-tight"
+            className="text-xl sm:text-2xl lg:text-3xl font-bold text-brand-navy tracking-tight"
           >
             Marcas que llevan nuestro merchandising
           </h2>

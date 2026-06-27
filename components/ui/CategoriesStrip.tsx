@@ -23,7 +23,7 @@ type IconType =
 
 const TomatodoIcon = ({ className = '' }) => (
   <Image
-    src="/icons/tomatodo.png"
+    src="/icons/tomatodo.webp"
     alt="Tomatodo"
     width={28}
     height={28}
@@ -33,7 +33,7 @@ const TomatodoIcon = ({ className = '' }) => (
 
 const BarmatIcon = ({ className = '' }) => (
   <Image
-    src="/icons/barmat.png"
+    src="/icons/barmat.webp"
     alt="Barmat"
     width={28}
     height={28}
@@ -118,16 +118,16 @@ export default function CategoriesStrip({ categories }: Props) {
       className="bg-white border-b border-gray-100 py-6 md:py-8"
       aria-labelledby="categories-strip-heading"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container-wide">
         {/* ─── Header con flechas a la derecha ─── */}
         <header className="flex items-end justify-between gap-4 mb-4">
           <div>
-            <p className="text-brand-turquoise text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5">
+            <p className="text-brand-turquoise text-[11px] font-bold uppercase tracking-[0.2em] mb-1">
               Explora por categoría
             </p>
             <h2
               id="categories-strip-heading"
-              className="text-lg md:text-xl font-bold text-brand-navy tracking-tight"
+              className="text-xl sm:text-2xl font-bold text-brand-navy tracking-tight"
             >
               Encuentra lo que buscas
             </h2>
@@ -142,7 +142,7 @@ export default function CategoriesStrip({ categories }: Props) {
             >
               Ver todas
               <ArrowRight
-                size={15}
+                size={16}
                 strokeWidth={2.5}
                 className="transition-transform group-hover:translate-x-0.5"
               />
@@ -184,7 +184,7 @@ export default function CategoriesStrip({ categories }: Props) {
         <div
           ref={scrollerRef}
           className="flex gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide
-                     -mx-4 px-4 sm:mx-0 sm:px-0"
+                     -mx-3 px-3 sm:-mx-5 sm:px-5 lg:-mx-8 lg:px-8 xl:mx-0 xl:px-0"
         >
           {categories.map((cat) => (
             <CategoryCard key={cat.id} category={cat} />

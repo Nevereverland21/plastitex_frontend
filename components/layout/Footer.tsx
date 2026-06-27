@@ -19,14 +19,14 @@ export default function Footer() {
     <footer className="bg-brand-navy">
 
       {/* ═════════════════ MAIN ═════════════════ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-16">
+      <div className="container-wide py-14 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8">
 
           {/* ─── Columna 1: Marca ─── */}
           <div className="lg:col-span-1">
             <div className="mb-5">
               <Image
-                src="/logo_sin_frase.png"
+                src="/logo_sin_frase.webp"
                 alt="Plastitex"
                 width={180}
                 height={55}
@@ -132,7 +132,7 @@ export default function Footer() {
 
       {/* ═════════════════ BOTTOM BAR ═════════════════ */}
       <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5
+        <div className="container-wide py-5
                         flex flex-col sm:flex-row items-center justify-between gap-3 flex-wrap">
           <p className="text-white/40 text-xs">
             © {new Date().getFullYear()} Plastitex — Transformamos ideas en Merchandising.

@@ -38,7 +38,7 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
     <div className="bg-white min-h-screen">
 
       {/* ── Breadcrumb ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <div className="container-narrow pt-6">
         <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-6">
           <Link href="/" className="hover:text-brand-navy transition-colors">Inicio</Link>
           <ChevronRight size={11} />
@@ -62,16 +62,16 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
       </div>
 
       {/* ── Layout principal: imagen + panel ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_480px] gap-6 lg:gap-10">
+      <div className="container-narrow">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] gap-6 lg:gap-10 items-start">
 
-          {/* ════ COLUMNA IZQUIERDA — Imagen grande sticky ════ */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
+          {/* ════ COLUMNA IZQUIERDA — Imagen del producto ════ */}
+          <div className="lg:sticky lg:top-28 lg:self-start">
 
-            {/* Imagen principal */}
+            {/* Imagen principal: cuadrada y con altura máxima para no forzar scroll */}
             <div className="relative bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100
                             rounded-3xl overflow-hidden border border-gray-100 shadow-sm
-                            aspect-square lg:aspect-[4/5]">
+                            aspect-square max-h-[520px] mx-auto">
 
               {product.image ? (
                 <Image
@@ -80,18 +80,18 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
-                  className="object-contain p-8 lg:p-12 transition-transform duration-700 hover:scale-105"
+                  className="object-contain p-6 lg:p-10 transition-transform duration-700 hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-200">
-                  <Package size={96} strokeWidth={0.6} />
+                  <Package size={80} strokeWidth={0.6} />
                 </div>
               )}
 
               {/* Watermark sutil de categoría */}
               {product.category?.name && (
                 <div className="absolute bottom-4 left-4">
-                  <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">
                     {product.category.name}
                   </span>
                 </div>
@@ -142,10 +142,9 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
             )}
           </div>
 
-          {/* ════ COLUMNA DERECHA — Panel de compra sin scroll ════ */}
-          {/* h fija en desktop para que el panel no haga scroll de página */}
-          <div className="lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-7rem)] lg:max-h-[780px]">
-            <div className="h-full bg-white border border-gray-100 rounded-3xl shadow-sm p-5 lg:p-6 flex flex-col">
+          {/* ════ COLUMNA DERECHA — Panel de compra ════ */}
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <div className="bg-white border border-gray-100 rounded-3xl shadow-sm p-5 lg:p-6 flex flex-col">
               <PurchasePanel
                 product={product}
                 surcharges={surcharges}
@@ -162,7 +161,7 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
       </div>
 
       {/* ── Tabs de info: descripción / specs / ficha ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <div className="container-narrow pb-16">
         <ProductTabs product={product} />
       </div>
 

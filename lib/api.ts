@@ -63,9 +63,15 @@ const isDev = process.env.NODE_ENV === 'development';
 // guardar). El `revalidate` es solo un respaldo de auto-sanado por si el webhook
 // falla: lo mantenemos corto (5 min) para que ningún dato (precio/stock/recargo)
 // quede viejo mucho tiempo. En dev siempre se pide fresco.
+// Timeout de seguridad: si la API no responde (backend caído/colgado), el fetch
+// se aborta y el `.catch(() => [])` de quien llama puede renderizar igual en vez
+// de dejar la página colgada "cargando" para siempre.
+const SERVER_FETCH_TIMEOUT_MS = 8000;
+
 export function cacheOptions(tags: string[], revalidate = 300): RequestInit {
-  if (isDev) return { cache: 'no-store' };
-  return { next: { tags, revalidate } };
+  const signal = AbortSignal.timeout(SERVER_FETCH_TIMEOUT_MS);
+  if (isDev) return { cache: 'no-store', signal };
+  return { next: { tags, revalidate }, signal };
 }
 
 // ─── Instancia axios (Client Components) ──────────────────────────────────────

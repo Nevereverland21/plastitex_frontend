@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  /* Contenedor ancho compartido por el hero y todo el contenido de la página.
+     Centrado con márgenes automáticos y padding lateral cómodo → todo el sitio
+     queda alineado y simétrico, sin estirarse demasiado en pantallas grandes. */
+  .container-wide {
+    @apply mx-auto max-w-[1280px] px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Contenedor más contenido para páginas con layouts densos (producto, etc.)
+     donde un ancho excesivo dificulta la lectura. */
+  .container-narrow {
+    @apply mx-3 sm:mx-5 lg:mx-8 max-w-[1280px] xl:mx-auto;
+  }
+}
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;

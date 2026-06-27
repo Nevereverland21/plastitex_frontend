@@ -75,7 +75,7 @@ export default function TrabajaConNosotrosPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-brand-navy via-brand-navy/85 to-brand-navy/50" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-28 w-full">
+        <div className="relative container-wide py-24 md:py-28 w-full">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 bg-brand-orange/20 text-brand-orange
                             text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-6">
@@ -96,7 +96,7 @@ export default function TrabajaConNosotrosPage() {
 
       {/* ══════════════ BENEFICIOS ══════════════ */}
       <section className="py-16 bg-brand-light">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="container-wide">
           <h2 className="text-2xl font-bold text-brand-navy text-center mb-10">
             ¿Por qué trabajar con nosotros?
           </h2>
