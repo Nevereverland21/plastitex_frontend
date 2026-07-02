@@ -9,28 +9,50 @@ import { formatPrice, formatQuantity } from '@/lib/formatters';
 
 interface ProductCardProps {
   product: Product;
+  isVisible?: boolean;
+  /** Modo mayorista del catálogo: enlaza a /{slug}/mayorista y muestra rangos mayoristas. */
+  wholesale?: boolean;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
+export default function ProductCard({ product, isVisible, wholesale = false }: ProductCardProps) {
   const [activeTierIndex, setActiveTierIndex] = useState<number | null>(null);
 
   const displayImage = product.image;
 
-  const isRetail = product.catalog_type === 'retail' || product.catalog_type === 'both';
-  const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
-  const hasTiers = product.pricing_tiers && product.pricing_tiers.length > 0;
+  const minUnits = product.min_units ?? 1;
+  const wholesaleOnly = minUnits > 1;   // "solo mayorista" = compra mínima alta
+  const wholesaleThreshold = product.wholesale_threshold ?? 100;
+  const href = wholesale ? `/${product.slug}/mayorista` : `/${product.slug}`;
 
-  const isOutOfStock = isRetail && product.stock === 0;
-  const isLowStock = isRetail && product.stock > 0 && product.stock <= 5;
+  const allTiers = product.pricing_tiers ?? [];
+  // Rangos mayoristas = los ≥ umbral. En modo mayorista solo se muestran esos;
+  // si el producto aún no tiene rango mayorista, no hay chips y cae al precio base.
+  const wsTiers = allTiers.filter((t) => t.min_quantity >= wholesaleThreshold);
+  const displayTiers = wholesale ? wsTiers : allTiers;
+  const hasTiers = displayTiers.length > 0;
 
-  const activeTier = activeTierIndex !== null ? product.pricing_tiers?.[activeTierIndex] : null;
-  const displayedPrice = activeTier
-    ? parseFloat(String(activeTier.unit_price))
-    : parseFloat(String(product.starting_price));
+  const isOutOfStock = product.stock === 0;
+  const isLowStock = product.stock > 0 && product.stock <= 5;
+
+  const basePrice = parseFloat(String(product.base_price));
+  // Rango donde ARRANCA el mayoreo: el de menor cantidad entre los ≥ umbral.
+  const wsEntry = wsTiers.length
+    ? wsTiers.reduce((m, t) => (t.min_quantity < m.min_quantity ? t : m))
+    : null;
+
+  const activeTier = activeTierIndex !== null ? displayTiers[activeTierIndex] : null;
+  // Precio de cabecera: catálogo normal → PRECIO BASE; catálogo mayorista → precio
+  // del rango de entrada mayorista (o precio base si aún no tiene rango mayorista).
+  const startPrice = wholesale
+    ? (wsEntry ? parseFloat(String(wsEntry.unit_price)) : basePrice)
+    : basePrice;
+  const displayedPrice = activeTier ? parseFloat(String(activeTier.unit_price)) : startPrice;
 
   const priceLabel = activeTier
     ? `${formatQuantity(activeTier.min_quantity)}+ uds`
-    : 'Desde';
+    : wholesale && wsEntry
+      ? `Desde ${formatQuantity(wsEntry.min_quantity)} uds`
+      : 'Desde';
 
   return (
     <div
@@ -41,22 +63,22 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* ── Imagen ─────────────────────────────────────────────── */}
       <Link
-        href={`/${product.slug}`}
+        href={href}
         className="relative aspect-square bg-gradient-to-br from-gray-50 to-slate-50/60 overflow-hidden block"
       >
         {/* Badges superiores */}
         <div className="absolute top-2.5 left-2.5 z-10 flex flex-col gap-1 items-start">
-          {product.featured && (
+          {product.featured && isVisible && (
             <span className="bg-brand-turquoise text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
               Destacado
             </span>
           )}
-          {isLowStock && (
+          {isLowStock && isVisible && (
             <span className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm">
               Últimas {product.stock} uds
             </span>
           )}
-          {!isOutOfStock && isRetail && product.stock > 5 && (
+          {!isOutOfStock && product.stock > 5 && isVisible && (
             <span className="bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
               <span className="w-1 h-1 rounded-full bg-white" />
               En stock
@@ -121,7 +143,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <p className="text-[10px] text-brand-turquoise font-bold uppercase tracking-[0.12em] mb-0.5">
             {product.category_name}
           </p>
-          <Link href={`/${product.slug}`}>
+          <Link href={href}>
             <h3 className="text-[15px] font-bold text-brand-navy leading-snug line-clamp-2
                            group-hover:text-brand-turquoise transition-colors duration-200">
               {product.name}
@@ -131,20 +153,20 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Tipo de venta */}
         <div className="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
-          {isRetail && isWholesale ? (
-            <>
-              <ShoppingBag size={11} strokeWidth={2.5} />
-              Por unidad y por mayor
-            </>
-          ) : isWholesale ? (
+          {wholesale ? (
             <>
               <Building2 size={11} strokeWidth={2.5} />
-              Solo por mayor
+              Por mayor · desde {formatQuantity(wholesaleThreshold)} uds
+            </>
+          ) : wholesaleOnly ? (
+            <>
+              <Building2 size={11} strokeWidth={2.5} />
+              Solo por mayor · mín. {formatQuantity(minUnits)} uds
             </>
           ) : (
             <>
               <ShoppingBag size={11} strokeWidth={2.5} />
-              Por unidad
+              Por unidad y por mayor
             </>
           )}
         </div>
@@ -153,7 +175,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <div className="min-h-[24px] flex items-start mt-1">
           {hasTiers ? (
             <div className="flex flex-wrap gap-1">
-              {product.pricing_tiers!.slice(0, 2).map((tier, i) => (
+              {displayTiers.slice(0, 2).map((tier, i) => (
                 <button
                   key={i}
                   onMouseEnter={() => setActiveTierIndex(i)}
@@ -168,10 +190,10 @@ export default function ProductCard({ product }: ProductCardProps) {
                   {formatQuantity(tier.min_quantity)}+ → S/{formatPrice(parseFloat(String(tier.unit_price)))}
                 </button>
               ))}
-              {product.pricing_tiers!.length > 2 && (
+              {displayTiers.length > 2 && (
                 <span className="self-center px-2 py-0.5 rounded-full text-[10px] font-bold
                                  bg-brand-navy/5 text-brand-navy/50 border border-brand-navy/10">
-                  +{product.pricing_tiers!.length - 2}
+                  +{displayTiers.length - 2}
                 </span>
               )}
             </div>

@@ -44,6 +44,15 @@ export default function CartSidebar() {
             <div className="flex flex-col items-center justify-center h-full gap-4 text-gray-400">
               <ShoppingBag size={48} strokeWidth={1} />
               <p className="text-sm">Tu carrito está vacío</p>
+              <Link
+                href="/catalogo"
+                onClick={closeCart}
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-turquoise px-5 py-2.5
+                           text-sm font-bold text-white shadow-md transition-all
+                           hover:bg-brand-teal hover:scale-[1.02] active:scale-95"
+              >
+                Explora el catálogo
+              </Link>
             </div>
           ) : (
             items.map((item) => {

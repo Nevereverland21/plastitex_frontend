@@ -33,7 +33,7 @@ export default function CorporateBanner() {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
               <Link
-                href="/catalogo?catalog_type=wholesale"
+                href="/catalogo?mayorista=1"
                 className="inline-flex items-center justify-center gap-2 bg-brand-turquoise hover:bg-brand-teal
                            text-white px-7 py-3 rounded-full text-sm font-semibold transition-all
                            hover:scale-[1.02] active:scale-95 shadow-lg shadow-brand-turquoise/20"

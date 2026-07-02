@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useTransition } from 'react';
+import Link from 'next/link';
 import { Search, X } from 'lucide-react';
-import type { Product, Category, CatalogType } from '@/types';
+import type { Product, Category } from '@/types';
 import type { PaginatedResponse } from '@/lib/api';
 import ProductCard from '@/components/ui/ProductCard';
 import FiltersSidebar from '@/components/catalog/FiltersSidebar';
 import FiltersDrawer from '@/components/catalog/FiltersDrawer';
 import CatalogToolbar from '@/components/catalog/CatalogToolbar';
-import CatalogToggle from '@/components/catalog/CatalogToggle';
 import ActiveFilters from '@/components/catalog/ActiveFilters';
 import Pagination from '@/components/catalog/Pagination';
 import EmptyResults from '@/components/catalog/EmptyResults';
@@ -20,14 +20,15 @@ interface Props {
   initialData: PaginatedResponse<Product> | null;
   categories: Category[];
   priceRange: { min: number; max: number };
-  catalogType: CatalogType | 'all';
+  /** Modo mayorista del catálogo (?mayorista=1): tarjetas → vista mayorista. */
+  wholesale?: boolean;
 }
 
 export default function CatalogoContent({
   initialData,
   categories,
   priceRange,
-  catalogType,
+  wholesale = false,
 }: Props) {
   const { filters, setFilter, hasActiveFilters, selectedCategories } =
     useCatalogFilters();
@@ -60,7 +61,9 @@ export default function CatalogoContent({
     selectedCategories.length +
     (filters.search ? 1 : 0) +
     (filters.minPrice !== undefined || filters.maxPrice !== undefined ? 1 : 0) +
-    (filters.inStock ? 1 : 0);
+    (filters.inStock ? 1 : 0) +
+    (filters.featured ? 1 : 0) +
+    (filters.allowsLogo ? 1 : 0);
 
   return (
     <div className="bg-white min-h-screen">
@@ -69,19 +72,29 @@ export default function CatalogoContent({
         {/* ═══════════════ HEADER ═══════════════ */}
         <header className="mb-6">
           <p className="text-brand-orange text-xs font-semibold uppercase tracking-[0.2em] mb-2">
-            Catálogo
+            {wholesale ? 'Catálogo mayorista' : 'Catálogo'}
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-brand-navy tracking-tight">
-            {catalogType === 'retail'
-              ? 'Productos Minoristas'
-              : catalogType === 'wholesale'
-              ? 'Productos Mayoristas'
-              : 'Todos los productos'}
+            {wholesale ? 'Productos por mayor' : 'Todos los productos'}
           </h1>
+          {wholesale ? (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+              <p className="text-sm text-gray-500">
+                Precios por volumen · cada producto abre su vista mayorista.
+              </p>
+              <Link
+                href="/catalogo"
+                className="text-sm font-semibold text-brand-turquoise hover:underline"
+              >
+                Ver catálogo normal
+              </Link>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 mt-1">
+              Compra por unidad o al por mayor — el precio se ajusta según la cantidad.
+            </p>
+          )}
         </header>
-
-        {/* ═══════════════ TOGGLE MINORISTA / MAYORISTA ═══════════════ */}
-        <CatalogToggle />
 
         {/* ═══════════════ BUSCADOR ═══════════════ */}
         <div className="mb-6 max-w-2xl">
@@ -165,7 +178,7 @@ export default function CatalogoContent({
                           animationFillMode: 'both',
                         }}
                       >
-                        <ProductCard product={product} />
+                        <ProductCard product={product} isVisible={true} wholesale={wholesale} />
                       </div>
                     ))}
                   </div>

@@ -1,15 +1,26 @@
 'use client';
 
-import { MessageCircle, CreditCard, QrCode, Landmark, Smartphone } from 'lucide-react';
+import { useState } from 'react';
+import { MessageCircle, CreditCard, QrCode, Landmark, Smartphone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { WHATSAPP } from '@/lib/config';
 import type { PaymentLink } from '@/types';
+import BankTransferPanel from './BankTransferPanel';
 
 interface PaymentMethodsProps {
   link: PaymentLink;
+  token: string;
+  onSubmitted?: () => void;
 }
 
-export default function PaymentMethods({ link }: PaymentMethodsProps) {
+export default function PaymentMethods({ link, token, onSubmitted }: PaymentMethodsProps) {
   const isActive = link.is_active;
+  const transferEnabled = isActive && !!link.bank_account;
+
+  // Si ya hay un comprobante en juego, abrir el panel de transferencia directo.
+  const proofStatus = link.transfer_proof?.status;
+  const [selected, setSelected] = useState<string | null>(
+    transferEnabled && (proofStatus === 'pending' || proofStatus === 'rejected') ? 'transferencia' : null,
+  );
 
   const handleWhatsAppPayment = () => {
     const lines = [
@@ -21,31 +32,57 @@ export default function PaymentMethods({ link }: PaymentMethodsProps) {
     window.open(WHATSAPP.link(lines), '_blank');
   };
 
+  // ── Vista: panel de transferencia seleccionado ──
+  if (selected === 'transferencia' && transferEnabled) {
+    return (
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => setSelected(null)}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700"
+        >
+          <ChevronLeft size={14} /> Otros métodos de pago
+        </button>
+        <BankTransferPanel link={link} token={token} onSubmitted={onSubmitted} />
+      </div>
+    );
+  }
+
   const methods = [
+    {
+      id: 'transferencia',
+      label: 'Transferencia bancaria',
+      description: 'Sin comisión · Sube tu constancia',
+      icon: Landmark,
+      enabled: transferEnabled,
+      color: 'bg-brand-navy hover:bg-brand-navy/90',
+      textColor: 'text-white',
+      onClick: () => setSelected('transferencia'),
+    },
     {
       id: 'whatsapp',
       label: 'Pagar por WhatsApp',
-      description: 'Coordina tu pago directamente con un asesor',
+      description: 'Coordina tu pago con un asesor',
       icon: MessageCircle,
-      enabled: true,
+      enabled: isActive,
       color: 'bg-[#25D366] hover:bg-[#1db954]',
       textColor: 'text-white',
       onClick: handleWhatsAppPayment,
     },
     {
-      id: 'izipay',
-      label: 'Tarjeta de crédito/débito',
-      description: 'Pago seguro con Izipay',
-      icon: CreditCard,
+      id: 'yape',
+      label: 'Yape',
+      description: 'Próximamente',
+      icon: Smartphone,
       enabled: false,
       color: 'bg-gray-100',
       textColor: 'text-gray-400',
     },
     {
-      id: 'yape',
-      label: 'Yape',
-      description: 'Escanea el QR con tu app',
-      icon: Smartphone,
+      id: 'izipay',
+      label: 'Tarjeta de crédito/débito',
+      description: 'Próximamente',
+      icon: CreditCard,
       enabled: false,
       color: 'bg-gray-100',
       textColor: 'text-gray-400',
@@ -53,17 +90,8 @@ export default function PaymentMethods({ link }: PaymentMethodsProps) {
     {
       id: 'plin',
       label: 'Plin',
-      description: 'Escanea el QR con tu app',
+      description: 'Próximamente',
       icon: QrCode,
-      enabled: false,
-      color: 'bg-gray-100',
-      textColor: 'text-gray-400',
-    },
-    {
-      id: 'transferencia',
-      label: 'Transferencia bancaria',
-      description: 'Próximamente: datos de cuenta',
-      icon: Landmark,
       enabled: false,
       color: 'bg-gray-100',
       textColor: 'text-gray-400',
@@ -76,41 +104,36 @@ export default function PaymentMethods({ link }: PaymentMethodsProps) {
 
       {methods.map((method) => {
         const Icon = method.icon;
-        const isEnabled = method.enabled && isActive;
+        const isEnabled = method.enabled;
 
         return (
           <button
             key={method.id}
             onClick={isEnabled ? method.onClick : undefined}
             disabled={!isEnabled}
-            className={`w-full flex items-center gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${
+            className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${
               isEnabled
                 ? `${method.color} ${method.textColor} border-transparent shadow-md hover:scale-[1.01] active:scale-[0.99] cursor-pointer`
                 : 'bg-gray-50 border-gray-200 cursor-not-allowed opacity-70'
             }`}
           >
-            <div
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                isEnabled ? 'bg-white/20' : 'bg-gray-100'
-              }`}
-            >
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isEnabled ? 'bg-white/20' : 'bg-gray-100'}`}>
               <Icon size={20} className={isEnabled ? 'text-white' : 'text-gray-400'} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className={`text-sm font-bold ${isEnabled ? method.textColor : 'text-gray-500'}`}>
-                  {method.label}
-                </p>
+                <p className={`text-sm font-bold ${isEnabled ? method.textColor : 'text-gray-500'}`}>{method.label}</p>
                 {!method.enabled && (
                   <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
                     Próximamente
                   </span>
                 )}
               </div>
-              <p className={`text-xs ${isEnabled ? 'text-white/80' : 'text-gray-400'}`}>
-                {method.description}
-              </p>
+              <p className={`text-xs ${isEnabled ? 'text-white/80' : 'text-gray-400'}`}>{method.description}</p>
             </div>
+            {isEnabled && method.id === 'transferencia' && (
+              <ChevronRight size={18} className="shrink-0 text-white/80" />
+            )}
           </button>
         );
       })}

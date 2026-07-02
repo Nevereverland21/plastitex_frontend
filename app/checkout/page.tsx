@@ -44,7 +44,6 @@ async function getCheckoutData(searchParams: Awaited<PageProps['searchParams']>)
         image: product.image,
         stock: product.stock,
         featured: product.featured,
-        catalog_type: product.catalog_type,
         min_units: product.min_units,
         quote_threshold: product.quote_threshold,
         wholesale_threshold: product.wholesale_threshold,

@@ -6,11 +6,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
-  ShoppingBag,
-  Boxes,
-  PackageCheck,
-  ArrowRight,
+  Star,
   Pencil,
+  PackageCheck,
+  Sparkles,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -83,10 +83,10 @@ const SLIDES: HeroSlide[] = [
 
 // CTAs persistentes — los 4 motivos de compra del cliente.
 const QUICK_CTAS: QuickCTA[] = [
-  { label: 'Comprar por Unidad', href: '/catalogo?catalog_type=retail', icon: ShoppingBag, variant: 'primary' },
-  { label: 'Comprar por Mayor', href: '/catalogo?catalog_type=wholesale', icon: Boxes, variant: 'primary' },
-  { label: 'Productos en Stock', href: '/catalogo?in_stock=true', icon: PackageCheck, variant: 'secondary' },
-  { label: 'Productos Nuevos', href: '/catalogo?ordering=-created_at', icon: Pencil, variant: 'secondary' },
+  { label: 'Destacados', href: '/catalogo?featured=true', icon: Star, variant: 'primary' },
+  { label: 'Personalizables', href: '/catalogo?allows_logo=true', icon: Pencil, variant: 'primary' },
+  { label: 'Entrega inmediata', href: '/catalogo?in_stock=true', icon: PackageCheck, variant: 'secondary' },
+  { label: 'Novedades', href: '/catalogo?ordering=-created_at', icon: Sparkles, variant: 'secondary' },
 ];
 
 const AUTOPLAY_MS = 5000;

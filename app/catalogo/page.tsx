@@ -3,12 +3,10 @@ import {
   getCategoriesServer,
   type ProductFilters,
 } from '@/lib/api';
-import type { CatalogType } from '@/types';
 import CatalogoContent from './CatalogoContent';
 
 interface PageProps {
   searchParams: Promise<{
-    catalog_type?: string;
     category?: string;
     categoria?: string;
     search?: string;
@@ -16,17 +14,15 @@ interface PageProps {
     min_price?: string;
     max_price?: string;
     in_stock?: string;
+    featured?: string;
+    allows_logo?: string;
     ordering?: string;
     page?: string;
+    mayorista?: string;
   }>;
 }
 
 export const revalidate = 30;
-
-function parseCatalogType(value: string | undefined): CatalogType | 'all' {
-  if (value === 'retail' || value === 'wholesale') return value;
-  return 'all';
-}
 
 function isValidOrdering(v: unknown): v is ProductFilters['ordering'] {
   return (
@@ -42,15 +38,14 @@ function isValidOrdering(v: unknown): v is ProductFilters['ordering'] {
 export default async function CatalogoPage({ searchParams }: PageProps) {
   const params = await searchParams;
 
-  const catalogType = parseCatalogType(params.catalog_type);
-
   const filters: ProductFilters = {
-    ...(catalogType !== 'all' && { catalog_type: catalogType }),
     category: params.category ?? params.categoria,
     search: params.search ?? params.q,
     min_price: params.min_price ? Number(params.min_price) : undefined,
     max_price: params.max_price ? Number(params.max_price) : undefined,
     in_stock: params.in_stock === 'true' || params.in_stock === '1',
+    featured: params.featured === 'true' || params.featured === '1',
+    allows_logo: params.allows_logo === 'true' || params.allows_logo === '1',
     ordering: isValidOrdering(params.ordering) ? params.ordering : '-created_at',
     page: params.page ? Math.max(1, Number(params.page)) : 1,
     page_size: 24,
@@ -66,7 +61,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
       initialData={initialData}
       categories={categories}
       priceRange={priceRange}
-      catalogType={catalogType}
+      wholesale={params.mayorista === '1' || params.mayorista === 'true'}
     />
   );
 }

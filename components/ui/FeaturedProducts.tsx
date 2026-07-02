@@ -77,7 +77,7 @@ export default function FeaturedProducts({
                 animationFillMode: 'both',
               }}
             >
-              <ProductCard product={product} />
+              <ProductCard product={product} isVisible={false} />
             </div>
           ))}
 

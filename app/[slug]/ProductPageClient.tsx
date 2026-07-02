@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ChevronRight, Package, PenLine, Trash2, X } from 'lucide-react';
+import { ChevronRight, Package, PenLine, Trash2, X, Building2, ArrowLeft } from 'lucide-react';
 import type { ProductDetail, LogoSurcharge } from '@/types';
 import type { CustomizationData } from '@/types/customizer';
 import PurchasePanel from '@/components/product/PurchasePanel';
@@ -18,9 +18,11 @@ const CustomizerModal = dynamic(
 interface ProductPageClientProps {
   product: ProductDetail;
   surcharges: LogoSurcharge[];
+  /** Vista mayorista (/{slug}/mayorista). */
+  wholesale?: boolean;
 }
 
-export default function ProductPageClient({ product, surcharges }: ProductPageClientProps) {
+export default function ProductPageClient({ product, surcharges, wholesale = false }: ProductPageClientProps) {
   const [activeSurcharge, setActiveSurcharge] = useState<LogoSurcharge | null>(null);
   const [customization, setCustomization]     = useState<CustomizationData | null>(null);
   const [customizerOpen, setCustomizerOpen]   = useState(false);
@@ -58,8 +60,35 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
           <span className="text-brand-navy font-semibold truncate max-w-[180px]">
             {product.name}
           </span>
+          {wholesale && (
+            <>
+              <ChevronRight size={11} />
+              <span className="text-brand-navy font-semibold">Mayorista</span>
+            </>
+          )}
         </nav>
       </div>
+
+      {/* ── Cabecera de vista mayorista ── */}
+      {wholesale && (
+        <div className="container-narrow">
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-2
+                          rounded-2xl bg-brand-navy px-4 py-3 text-white">
+            <div className="flex items-center gap-2">
+              <Building2 size={18} className="text-brand-aqua" />
+              <p className="text-sm font-semibold">
+                Vista mayorista — precios por volumen y personalización DTF + serigrafía
+              </p>
+            </div>
+            <Link
+              href={`/${product.slug}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-white/80 hover:text-white"
+            >
+              <ArrowLeft size={13} /> Ver versión estándar
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ── Layout principal: imagen + panel ── */}
       <div className="container-narrow">
@@ -71,7 +100,7 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
             {/* Imagen principal: cuadrada y con altura máxima para no forzar scroll */}
             <div className="relative bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100
                             rounded-3xl overflow-hidden border border-gray-100 shadow-sm
-                            aspect-square max-h-[520px] mx-auto">
+                            aspect-square max-h-[640px] w-full mx-auto">
 
               {product.image ? (
                 <Image
@@ -80,7 +109,7 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
                   fill
                   sizes="(max-width: 1024px) 100vw, 50vw"
                   priority
-                  className="object-contain p-6 lg:p-10 transition-transform duration-700 hover:scale-105"
+                  className="object-contain p-4 lg:p-6 transition-transform duration-700 hover:scale-105"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-200">
@@ -153,6 +182,7 @@ export default function ProductPageClient({ product, surcharges }: ProductPageCl
                 onActiveSurchargeChange={setActiveSurcharge}
                 onCustomizationSave={handleSaveCustomization}
                 onOpenCustomizer={() => setCustomizerOpen(true)}
+                wholesale={wholesale}
               />
             </div>
           </div>

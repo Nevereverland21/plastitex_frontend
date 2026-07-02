@@ -20,6 +20,8 @@ export interface CatalogFilters {
   minPrice?: number;
   maxPrice?: number;
   inStock: boolean;
+  featured: boolean;
+  allowsLogo: boolean;
   ordering: OrderingValue;
   page: number;
 }
@@ -48,6 +50,8 @@ export function useCatalogFilters() {
     const minPrice = searchParams.get('min_price');
     const maxPrice = searchParams.get('max_price');
     const inStockParam = searchParams.get('in_stock');
+    const featuredParam = searchParams.get('featured');
+    const allowsLogoParam = searchParams.get('allows_logo');
     const orderingParam = searchParams.get('ordering') as OrderingValue | null;
     const pageParam = searchParams.get('page');
 
@@ -57,6 +61,8 @@ export function useCatalogFilters() {
       minPrice: minPrice ? Number(minPrice) : undefined,
       maxPrice: maxPrice ? Number(maxPrice) : undefined,
       inStock: inStockParam === 'true' || inStockParam === '1',
+      featured: featuredParam === 'true' || featuredParam === '1',
+      allowsLogo: allowsLogoParam === 'true' || allowsLogoParam === '1',
       ordering: isValidOrdering(orderingParam) ? orderingParam : DEFAULTS.ordering,
       page: pageParam ? Math.max(1, Number(pageParam)) : DEFAULTS.page,
     };
@@ -167,7 +173,9 @@ export function useCatalogFilters() {
       !!filters.search ||
       filters.minPrice !== undefined ||
       filters.maxPrice !== undefined ||
-      filters.inStock,
+      filters.inStock ||
+      filters.featured ||
+      filters.allowsLogo,
     [filters],
   );
 
@@ -204,6 +212,8 @@ function mapKeyToUrl(key: keyof CatalogFilters): string {
       return 'max_price';
     case 'inStock':
       return 'in_stock';
+    case 'allowsLogo':
+      return 'allows_logo';
     default:
       return key;
   }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { ShoppingBag, Building2, Sparkles, Share2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Building2, Sparkles, Share2, ArrowRight, ArrowLeft, Loader2 } from 'lucide-react';
 import type { ProductDetail, LogoSurcharge, QuoteResponse, ProductExtra } from '@/types';
 import type { CustomizationData } from '@/types/customizer';
 import { getProductQuote } from '@/lib/api';
@@ -22,6 +23,8 @@ interface PurchasePanelProps {
   onActiveSurchargeChange: (s: LogoSurcharge | null) => void;
   onCustomizationSave: (data: CustomizationData) => void;
   onOpenCustomizer: () => void;
+  /** Vista mayorista (/{slug}/mayorista): fuerza el modo mayorista. */
+  wholesale?: boolean;
 }
 
 export default function PurchasePanel({
@@ -31,13 +34,17 @@ export default function PurchasePanel({
   activeSurcharge,
   onActiveSurchargeChange,
   onOpenCustomizer,
+  wholesale = false,
 }: PurchasePanelProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const router = useRouter();
+  const [navPending, startNav] = useTransition();
+  const goToWholesale = () => startNav(() => router.push(`/${product.slug}/mayorista`));
+  const goToRetail    = () => startNav(() => router.push(`/${product.slug}`));
 
   const minUnits  = product.min_units ?? 1;
   const threshold = product.quote_threshold ?? 1000;
-  const isRetail    = product.catalog_type === 'retail' || product.catalog_type === 'both';
-  const isWholesale = product.catalog_type === 'wholesale' || product.catalog_type === 'both';
+  const wholesaleThreshold = product.wholesale_threshold ?? 100;
 
   // Solo mostrar personalización si el producto lo permite Y existen
   // recargos de logo configurados en el admin.
@@ -46,9 +53,11 @@ export default function PurchasePanel({
   const [activeTab, setActiveTab]     = useState<PanelTab>('comprar');
   // Si el producto permite logo, inicializamos con la cantidad mínima para
   // desbloquear la personalización, evitando que el tab aparezca bloqueado.
-  const initialQuantity = canCustomize
-    ? Math.max(minUnits, product.min_units_for_logo ?? minUnits)
-    : minUnits;
+  const initialQuantity = wholesale
+    ? Math.max(minUnits, wholesaleThreshold)
+    : canCustomize
+      ? Math.max(minUnits, product.min_units_for_logo ?? minUnits)
+      : minUnits;
   const [quantity, setQuantity]       = useState(initialQuantity);
   const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
   const [loading, setLoading]         = useState(false);
@@ -80,16 +89,15 @@ export default function PurchasePanel({
   // Clave estable de los ids para las dependencias del efecto del cotizador.
   const buyableExtraKey = buyableExtraIds.join(',');
 
-  // ── Canal efectivo y modo mayorista ──────────────────────────────────────
-  const wholesaleThreshold = product.wholesale_threshold ?? 100;
-  // Mayorista si el producto ya es mayorista, o si la cantidad alcanza el umbral.
+  // ── Canal efectivo y modo mayorista (100% por cantidad) ───────────────────
+  // Mayorista si estamos en la vista mayorista, o si la cantidad alcanza el umbral.
   const effectiveChannel: 'retail' | 'wholesale' =
-    product.catalog_type === 'wholesale' || quantity >= wholesaleThreshold
-      ? 'wholesale'
-      : 'retail';
-  // Un producto vendido como minorista que cruzó el umbral entra en modo mayorista.
-  const wholesaleModeActive =
-    product.catalog_type !== 'wholesale' && quantity >= wholesaleThreshold;
+    wholesale || quantity >= wholesaleThreshold ? 'wholesale' : 'retail';
+  // Desajuste de vista ↔ cantidad: en estándar al cruzar el umbral, o en mayorista
+  // al bajar del umbral. En ese caso NO se compra aquí: se redirige a la otra vista.
+  const crossedToWholesale = !wholesale && quantity >= wholesaleThreshold;
+  const droppedToRetail    = wholesale && quantity < wholesaleThreshold;
+  const viewMismatch       = crossedToWholesale || droppedToRetail;
 
   // Técnicas visibles según canal: minorista solo DTF, mayorista DTF + serigrafía.
   const visibleSurcharges = surcharges.filter((s) =>
@@ -233,14 +241,9 @@ export default function PurchasePanel({
               ★ Destacado
             </span>
           )}
-          {isRetail && (
-            <span className="bg-emerald-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <ShoppingBag size={9} strokeWidth={2.5} /> Minorista
-            </span>
-          )}
-          {isWholesale && (
+          {minUnits > 1 && (
             <span className="bg-brand-navy text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1">
-              <Building2 size={9} strokeWidth={2.5} /> Mayorista
+              <Building2 size={9} strokeWidth={2.5} /> Solo por mayor
             </span>
           )}
           {canCustomize && (
@@ -292,17 +295,6 @@ export default function PurchasePanel({
         <div className="mt-3" />
       )}
 
-      {/* ── Banner modo mayorista ── */}
-      {wholesaleModeActive && (
-        <div className="mt-3 flex items-start gap-2 rounded-xl bg-brand-navy/5 border border-brand-navy/15 px-3 py-2.5">
-          <Building2 size={15} className="text-brand-navy flex-shrink-0 mt-0.5" />
-          <p className="text-[11px] text-brand-navy leading-relaxed">
-            <strong>Modo mayorista.</strong> Desde {wholesaleThreshold} unidades este pedido se cotiza
-            como mayorista, con precios por volumen y opciones DTF + serigrafía.
-          </p>
-        </div>
-      )}
-
       {/* ── Tab content (scrollable internamente si hace falta) ── */}
       <div className="flex-1 overflow-y-auto min-h-0 py-2
                       scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">
@@ -315,6 +307,7 @@ export default function PurchasePanel({
               loading={loading}
               error={error}
               onQuantityChange={setQuantity}
+              wholesale={wholesale}
             />
             <ExtrasSection
               extras={activeExtras}
@@ -342,20 +335,58 @@ export default function PurchasePanel({
         )}
       </div>
 
-      {/* ── Total sticky al fondo ── */}
-      <StickyTotal
-        unitPrice={unitPrice}
-        quantity={quantity}
-        logoExtra={logoExtra}
-        extrasCost={effectiveExtrasCost}
-        extraIds={buyableExtraIds}
-        loading={loading}
-        ctaState={ctaState}
-        addedToCart={addedToCart}
-        productSlug={product.slug}
-        onAddToCart={handleAddToCart}
-        onRequestQuote={handleRequestQuote}
-      />
+      {/* ── Fondo: compra normal, o redirección a la otra vista si hay desajuste ── */}
+      {viewMismatch ? (
+        <div className="pt-3 border-t border-gray-100">
+          <div className="flex items-start gap-2 mb-2.5 rounded-xl bg-brand-navy/5 border border-brand-navy/15 px-3 py-2">
+            <Building2 size={15} className="text-brand-navy flex-shrink-0 mt-0.5" />
+            <p className="text-[11px] text-brand-navy leading-relaxed">
+              {crossedToWholesale ? (
+                <>Desde <strong>{wholesaleThreshold} unidades</strong> este producto se compra en la
+                vista mayorista, con precios por volumen y personalización DTF + serigrafía.</>
+              ) : (
+                <>Menos de <strong>{wholesaleThreshold} unidades</strong> se compran en la vista por
+                unidad.</>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={crossedToWholesale ? goToWholesale : goToRetail}
+            disabled={navPending}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-navy
+                       px-4 py-3.5 text-sm font-bold text-white transition-all
+                       hover:bg-brand-navy/90 active:scale-[0.99] disabled:opacity-70"
+          >
+            {navPending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : crossedToWholesale ? (
+              <Building2 size={16} />
+            ) : (
+              <ArrowLeft size={16} />
+            )}
+            {navPending
+              ? 'Cargando vista…'
+              : crossedToWholesale
+                ? 'Ver precios mayoristas'
+                : 'Ver compra por unidad'}
+            {!navPending && crossedToWholesale && <ArrowRight size={15} strokeWidth={2.5} />}
+          </button>
+        </div>
+      ) : (
+        <StickyTotal
+          unitPrice={unitPrice}
+          quantity={quantity}
+          logoExtra={logoExtra}
+          extrasCost={effectiveExtrasCost}
+          extraIds={buyableExtraIds}
+          loading={loading}
+          ctaState={ctaState}
+          addedToCart={addedToCart}
+          productSlug={product.slug}
+          onAddToCart={handleAddToCart}
+          onRequestQuote={handleRequestQuote}
+        />
+      )}
 
       {showQuoteForm && (
         <QuoteRequestModal

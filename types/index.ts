@@ -55,7 +55,6 @@ export interface ProductColor {
 
 // ─── CATALOG TYPE ────────────────────────────────────────────────────────────
 
-export type CatalogType = 'retail' | 'wholesale' | 'both';
 
 // ─── PRODUCT LIST (catálogo / hero) ──────────────────────────────────────────
 
@@ -69,7 +68,6 @@ export interface Product {
   image: string | null;
   stock: number;
   featured: boolean;
-  catalog_type: CatalogType;
   min_units: number;
   quote_threshold: number;
   wholesale_threshold: number;
@@ -93,7 +91,6 @@ export interface ProductDetail {
   image: string | null;
   stock: number;
   featured: boolean;
-  catalog_type: CatalogType;
   min_units: number;
   quote_threshold: number;
   wholesale_threshold: number;
@@ -265,6 +262,22 @@ export interface PaymentLinkItem {
   subtotal: string;
 }
 
+export interface BankAccount {
+  bank_name: string;
+  account_holder: string;
+  account_type: string;
+  account_number: string;
+  cci: string;
+  ruc: string;
+  instructions: string;
+}
+
+export interface TransferProofStatus {
+  status: 'none' | 'pending' | 'approved' | 'rejected';
+  created_at?: string;
+  admin_notes?: string;
+}
+
 export interface PaymentLink {
   order_id: number;
   customer_name: string;
@@ -281,6 +294,8 @@ export interface PaymentLink {
   items: PaymentLinkItem[];
   is_active: boolean;
   expires_at: string;
+  bank_account: BankAccount | null;
+  transfer_proof: TransferProofStatus;
 }
 
 // ─── COMPLAINT ───────────────────────────────────────────────────────────────

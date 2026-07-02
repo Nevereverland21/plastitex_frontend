@@ -20,12 +20,11 @@ export default function ProductTabs({ product }: ProductTabsProps) {
     product.packaging
   );
 
-  const isMinorist = product.catalog_type === 'retail'
   const hasPdf = !!product.technical_sheet?.pdf_file;
 
   const tabs = [
     { id: 'descripcion' as Tab, label: 'Descripción', icon: <Info size={14} />, show: true },
-    { id: 'especificaciones' as Tab, label: 'Especificaciones', icon: <Ruler size={14} />, show: hasSpecs && !isMinorist },
+    { id: 'especificaciones' as Tab, label: 'Especificaciones', icon: <Ruler size={14} />, show: hasSpecs },
     { id: 'ficha' as Tab, label: 'Ficha técnica', icon: <FileText size={14} />, show: hasPdf },
   ].filter((t) => t.show);
 
@@ -66,7 +65,7 @@ export default function ProductTabs({ product }: ProductTabsProps) {
         )}
 
         {/* Especificaciones */}
-        {active === 'especificaciones' && hasSpecs && !isMinorist && (
+        {active === 'especificaciones' && hasSpecs && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {product.material && (
               <SpecRow label="Material" value={product.material} />

@@ -76,7 +76,7 @@ export default function PaymentLinkClient({ initialLink, token }: PaymentLinkCli
           <div className="lg:col-span-2">
             {link.is_active && (
               <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                <PaymentMethods link={link} />
+                <PaymentMethods link={link} token={token} onSubmitted={refresh} />
               </div>
             )}
           </div>

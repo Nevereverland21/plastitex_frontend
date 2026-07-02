@@ -14,7 +14,6 @@ import type {
   StoreLocation,
   StorePolicy,
   PaymentLink,
-  CatalogType,
 } from '@/types';
 
 // ─── Tipos de respuesta ───────────────────────────────────────────────────────
@@ -27,7 +26,6 @@ export interface PaginatedResponse<T> {
 }
 
 export interface ProductFilters {
-  catalog_type?: CatalogType;
   category?: string;
   featured?: boolean;
   min_price?: number;
@@ -266,7 +264,7 @@ export async function getOrderByTokenServer(token: string): Promise<PublicOrder 
 
 export async function getPaymentLinkByToken(token: string): Promise<PaymentLink | null> {
   try {
-    const { data } = await api.get(`/payment-links/${token}/`);
+    const { data } = await api.get(`/api/payment-links/${token}/`);
     return data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response?.status === 404) {
@@ -274,6 +272,27 @@ export async function getPaymentLinkByToken(token: string): Promise<PaymentLink 
     }
     throw err;
   }
+}
+
+/**
+ * Sube el comprobante de una transferencia bancaria desde el link de pago.
+ * multipart/form-data (archivo + datos). El pago queda 'pendiente' hasta que
+ * un encargado lo aprueba en el admin.
+ */
+export async function submitTransferProof(
+  token: string,
+  data: { voucher: File; operation_number?: string },
+): Promise<{ status: string; message: string }> {
+  const fd = new FormData();
+  fd.append('voucher', data.voucher);
+  if (data.operation_number) fd.append('operation_number', data.operation_number);
+
+  const { data: res } = await api.post(
+    `/api/payment-links/${token}/transfer-proof/`,
+    fd,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return res;
 }
 
 export async function getPaymentLinkByTokenServer(token: string): Promise<PaymentLink | null> {

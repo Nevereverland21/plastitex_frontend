@@ -70,6 +70,22 @@ export default function ActiveFilters({ categories }: Props) {
         />
       )}
 
+      {/* Destacados */}
+      {filters.featured && (
+        <Chip
+          label="Destacados"
+          onRemove={() => setFilter('featured', false)}
+        />
+      )}
+
+      {/* Personalizables */}
+      {filters.allowsLogo && (
+        <Chip
+          label="Personalizables"
+          onRemove={() => setFilter('allowsLogo', false)}
+        />
+      )}
+
       {/* Limpiar todos */}
       <button
         onClick={clearFilters}

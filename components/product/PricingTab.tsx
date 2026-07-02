@@ -11,6 +11,8 @@ interface PricingTabProps {
   loading: boolean;
   error: string | null;
   onQuantityChange: (qty: number) => void;
+  /** Vista mayorista: muestra solo los rangos ≥ umbral mayorista. */
+  wholesale?: boolean;
 }
 
 function SpecItem({ label, value }: { label: string; value: string }) {
@@ -29,6 +31,7 @@ export default function PricingTab({
   loading,
   error,
   onQuantityChange,
+  wholesale = false,
 }: PricingTabProps) {
   const minUnits  = product.min_units ?? 1;
   const threshold = product.quote_threshold ?? 1000;
@@ -41,7 +44,17 @@ export default function PricingTab({
     if (!isNaN(v) && v > 0) onQuantityChange(v);
   };
 
-  const hasTiers   = product.pricing_tiers?.length > 0;
+  // Rangos separados por el umbral mayorista: la vista estándar muestra solo los
+  // rangos minoristas (< umbral); la vista mayorista, solo los mayoristas (≥ umbral).
+  const wholesaleThreshold = product.wholesale_threshold ?? 100;
+  const allTiers       = product.pricing_tiers ?? [];
+  const retailTiers    = allTiers.filter((t) => t.min_quantity < wholesaleThreshold);
+  const wholesaleTiers = allTiers.filter((t) => t.min_quantity >= wholesaleThreshold);
+  const tiers = wholesale
+    ? (wholesaleTiers.length ? wholesaleTiers : allTiers)
+    : (retailTiers.length ? retailTiers : allTiers);
+
+  const hasTiers   = tiers.length > 0;
   const isRetail   = !hasTiers;
   const hasDesc    = !!product.description;
 
@@ -72,17 +85,17 @@ export default function PricingTab({
           <div className="bg-gray-50/80 px-3 py-1.5 flex items-center gap-1.5 border-b border-gray-100">
             <TrendingDown size={11} className="text-brand-orange" />
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-              Precio por volumen
+              {wholesale ? 'Precios mayoristas' : 'Precio por volumen'}
             </p>
           </div>
-          {product.pricing_tiers.map((tier, i) => {
-            const next     = product.pricing_tiers[i + 1];
+          {tiers.map((tier, i) => {
+            const next     = tiers[i + 1];
             const isActive = quoteResult?.applied_tier?.min_quantity === tier.min_quantity;
             const label    = next
               ? `${formatInt(tier.min_quantity)} – ${formatInt(next.min_quantity - 1)} uds`
               : `${formatInt(tier.min_quantity)}+ uds`;
             const savings  = i > 0
-              ? Math.round((1 - parseFloat(String(tier.unit_price)) / parseFloat(String(product.pricing_tiers[0].unit_price))) * 100)
+              ? Math.round((1 - parseFloat(String(tier.unit_price)) / parseFloat(String(tiers[0].unit_price))) * 100)
               : 0;
 
             return (

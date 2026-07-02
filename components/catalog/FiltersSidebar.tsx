@@ -100,33 +100,60 @@ export default function FiltersSidebar({ categories, priceRange }: Props) {
         />
       </FilterSection>
 
-      {/* ── Stock ──────────────────────────────────────────────────── */}
+      {/* ── Disponibilidad y tipo ──────────────────────────────────── */}
       <FilterSection title="Disponibilidad">
-        <label className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer group">
-          <span
-            className={`flex-shrink-0 w-4 h-4 rounded border transition-all
-                        ${
-                          filters.inStock
-                            ? 'bg-brand-orange border-brand-orange'
-                            : 'bg-white border-gray-300 group-hover:border-gray-400'
-                        }`}
-          >
-            {filters.inStock && (
-              <Check size={12} strokeWidth={3} className="text-white" />
-            )}
-          </span>
-          <input
-            type="checkbox"
+        <div className="space-y-2.5">
+          <ToggleRow
+            label="Solo con stock"
             checked={filters.inStock}
-            onChange={(e) => setFilter('inStock', e.target.checked)}
-            className="sr-only"
+            onChange={(v) => setFilter('inStock', v)}
           />
-          <span className={filters.inStock ? 'font-semibold text-brand-navy' : ''}>
-            Solo con stock
-          </span>
-        </label>
+          <ToggleRow
+            label="Solo destacados"
+            checked={filters.featured}
+            onChange={(v) => setFilter('featured', v)}
+          />
+          <ToggleRow
+            label="Personalizables (con tu logo)"
+            checked={filters.allowsLogo}
+            onChange={(v) => setFilter('allowsLogo', v)}
+          />
+        </div>
       </FilterSection>
     </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Subcomponente: fila de toggle (checkbox custom)
+// ─────────────────────────────────────────────────────────────────────────────
+function ToggleRow({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-2.5 text-sm text-gray-700 cursor-pointer group">
+      <span
+        className={`flex-shrink-0 w-4 h-4 rounded border transition-all
+                    ${checked
+                      ? 'bg-brand-orange border-brand-orange'
+                      : 'bg-white border-gray-300 group-hover:border-gray-400'}`}
+      >
+        {checked && <Check size={12} strokeWidth={3} className="text-white" />}
+      </span>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only"
+      />
+      <span className={checked ? 'font-semibold text-brand-navy' : ''}>{label}</span>
+    </label>
   );
 }
 
